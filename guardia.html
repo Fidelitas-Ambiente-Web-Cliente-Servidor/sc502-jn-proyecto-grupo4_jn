@@ -32,13 +32,12 @@
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residentes')">Residentes</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residencias')">Residencias</a></li>
                 </ul>
-                <a href="index.html" class="nav-link" style="color:#f0a0a0;">Cerrar sesión</a>
+                <a href="index.html" class="nav-link nav-logout">Cerrar sesión</a>
             </div>
         </div>
     </nav>
 
     <main>
-|
         <section id="inicio" class="seccion activa">
             <h2>Bienvenido, Guardia</h2>
             <p>Resumen del día de hoy</p>
@@ -97,6 +96,7 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th>
+                                <th>Vehículo</th>
                                 <th>Residencia</th>
                                 <th>Fecha Ingreso</th>
                                 <th>Fecha Salida</th>
@@ -120,8 +120,11 @@
 
                         <label>Rol</label>
                         <select>
-                            <option>Visitante</option>
+                            <option>Visita</option>
+                            <option>Trabajador</option>
                             <option>Proveedor</option>
+                            <option>Tecnico</option>
+                            <option>Jardinero</option>
                         </select>
 
                         <label>Fecha y hora de ingreso</label>
@@ -132,9 +135,15 @@
 
                         <label>Estado</label>
                         <select>
-                            <option>Dentro</option>
-                            <option>Salió</option>
+                            <option>Adentro</option>
+                            <option>Afuera</option>
                         </select>
+
+                        <label for="visitantePlacaVehiculo">Placa de vehiculo (opcional)</label>
+                        <input id="visitantePlacaVehiculo" type="text" placeholder="Ej: ABC-123">
+
+                        <p class="mensaje-error"></p>
+                        <p class="mensaje-exito"></p>
 
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
@@ -184,6 +193,9 @@
                             <option>Entregado</option>
                         </select>
 
+                        <p class="mensaje-error"></p>
+                        <p class="mensaje-exito"></p>
+
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -200,7 +212,7 @@
                             <tr>
                                 <th>Placa</th>
                                 <th>Descripción</th>
-                                <th>Residente</th>
+                                <th>Propietario</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
@@ -227,6 +239,9 @@
                             <option>Activo</option>
                             <option>Inactivo</option>
                         </select>
+
+                        <p class="mensaje-error"></p>
+                        <p class="mensaje-exito"></p>
 
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
@@ -272,8 +287,11 @@
                         <label>Estado</label>
                         <select>
                             <option>Activo</option>
-                            <option>Resuelto</option>
+                            <option>Inactivo</option>
                         </select>
+
+                        <p class="mensaje-error"></p>
+                        <p class="mensaje-exito"></p>
 
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
@@ -284,7 +302,7 @@
 
         <section id="residentes" class="seccion">
             <h2>Residentes</h2>
-            <p style="color:#969191; font-size:0.9em;">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <p class="texto-consulta">Vista de consulta. Para modificar datos contacte al administrador.</p>
             <table>
                 <thead>
                     <tr>
@@ -302,7 +320,7 @@
 
         <section id="residencias" class="seccion">
             <h2>Residencias</h2>
-            <p style="color:#969191; font-size:0.9em;">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <p class="texto-consulta">Vista de consulta. Para modificar datos contacte al administrador.</p>
             <table>
                 <thead>
                     <tr>

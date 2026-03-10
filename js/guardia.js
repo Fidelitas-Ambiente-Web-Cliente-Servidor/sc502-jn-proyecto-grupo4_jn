@@ -1,23 +1,30 @@
-const visitantes = [];
-const vehiculos = [];
+let visitantes = [];
+let vehiculos = [];
 
-const residentes = [
-    { nombre: "Ana", apellidoPaterno: "Fernandez", apellidoMaterno: "Gutierrez", telefono: "8321-0987", residenciaId: "101", estado: "ACTIVO" },
-    { nombre: "Roberto", apellidoPaterno: "Chavarria", apellidoMaterno: "Arias", telefono: "8210-9876", residenciaId: "102", estado: "ACTIVO" },
-    { nombre: "Maria", apellidoPaterno: "Salas", apellidoMaterno: "Badilla", telefono: "8109-8765", residenciaId: "129", estado: "INACTIVO" }
+let residentes = [
+    { nombre: "Ana", apellidoPaterno: "Fernandez", apellidoMaterno: "Gutierrez", telefono: "8321-0987", residenciaId: "101", estado: "Activo" },
+    { nombre: "Roberto", apellidoPaterno: "Chavarria", apellidoMaterno: "Arias", telefono: "8210-9876", residenciaId: "102", estado: "Activo" },
+    { nombre: "Maria", apellidoPaterno: "Salas", apellidoMaterno: "Badilla", telefono: "8109-8765", residenciaId: "129", estado: "Inactivo" }
 ];
 
-const ui = {};
-const PATRON_PLACA = /^[A-Z0-9-]{5,10}$/;
-const PATRON_FECHA_HORA = /^(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2})$/;
+let PATRON_PLACA = /^[A-Z0-9-]{5,10}$/;
+let PATRON_FECHA_HORA = /^(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2})$/;
+
+let tarjetasResumen;
+let tablaInicio;
+let visitantesFormulario;
+let visitantesTabla;
+let vehiculosFormulario;
+let vehiculosTabla;
+let residentesTabla;
 
 function mostrarSeccion(id) {
-    const secciones = document.querySelectorAll(".seccion");
+    let secciones = document.querySelectorAll(".seccion");
     for (let i = 0; i < secciones.length; i++) {
         secciones[i].classList.remove("activa");
     }
 
-    const seccion = document.getElementById(id);
+    let seccion = document.getElementById(id);
     if (seccion) {
         seccion.classList.add("activa");
     }
@@ -26,7 +33,17 @@ function mostrarSeccion(id) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    inicializarUI();
+    tarjetasResumen = document.querySelectorAll("#inicio .tarjeta-resumen h3");
+    tablaInicio = document.querySelector("#inicio table tbody");
+
+    visitantesFormulario = document.querySelector("#visitantes form");
+    visitantesTabla = document.querySelector("#visitantes .bloque-tabla tbody");
+
+    vehiculosFormulario = document.querySelector("#vehiculos form");
+    vehiculosTabla = document.querySelector("#vehiculos .bloque-tabla tbody");
+
+    residentesTabla = document.querySelector("#residentes table tbody");
+
     poblarResidentes();
     poblarSelects();
     enlazarEventos();
@@ -36,64 +53,57 @@ document.addEventListener("DOMContentLoaded", function () {
     actualizarNavegacion("inicio");
 });
 
-function inicializarUI() {
-    ui.tarjetasResumen = document.querySelectorAll("#inicio .tarjeta-resumen h3");
-    ui.tablaInicio = document.querySelector("#inicio table tbody");
-
-    ui.visitantesFormulario = document.querySelector("#visitantes form");
-    ui.visitantesTabla = document.querySelector("#visitantes .bloque-tabla tbody");
-
-    ui.vehiculosFormulario = document.querySelector("#vehiculos form");
-    ui.vehiculosTabla = document.querySelector("#vehiculos .bloque-tabla tbody");
-
-    ui.residentesTabla = document.querySelector("#residentes table tbody");
-}
-
 function poblarResidentes() {
-    if (!ui.residentesTabla) {
+    if (!residentesTabla) {
         return;
     }
 
-    ui.residentesTabla.innerHTML = "";
+    residentesTabla.innerHTML = "";
 
     for (let i = 0; i < residentes.length; i++) {
-        const fila = document.createElement("tr");
+        let fila = document.createElement("tr");
         fila.innerHTML = "<td>" + residentes[i].nombre + "</td>" +
             "<td>" + residentes[i].apellidoPaterno + "</td>" +
             "<td>" + residentes[i].apellidoMaterno + "</td>" +
             "<td>" + residentes[i].telefono + "</td>" +
             "<td>" + residentes[i].residenciaId + "</td>" +
             "<td class='" + claseEstado(residentes[i].estado) + "'>" + residentes[i].estado + "</td>";
-        ui.residentesTabla.appendChild(fila);
+        residentesTabla.appendChild(fila);
     }
 }
 
 function poblarSelects() {
-    const selectResidenciaVisitante = ui.visitantesFormulario.querySelectorAll("select")[0];
-    const selectResidenteVehiculo = ui.vehiculosFormulario.querySelectorAll("select")[0];
+    let selectResidenciaVisitante = visitantesFormulario.querySelectorAll("select")[0];
+    let selectResidenteVehiculo = vehiculosFormulario.querySelectorAll("select")[0];
 
-    const residenciasUnicas = [];
+    let residenciasUnicas = [];
     for (let i = 0; i < residentes.length; i++) {
-        if (!residenciasUnicas.includes(residentes[i].residenciaId)) {
+        let existeResidencia = false;
+        for (let j = 0; j < residenciasUnicas.length; j++) {
+            if (residenciasUnicas[j] === residentes[i].residenciaId) {
+                existeResidencia = true;
+            }
+        }
+        if (!existeResidencia) {
             residenciasUnicas.push(residentes[i].residenciaId);
         }
     }
 
-    const opcionResidencia = selectResidenciaVisitante.options[0] ? selectResidenciaVisitante.options[0].outerHTML : "<option value=''>-- Seleccione --</option>";
+    let opcionResidencia = selectResidenciaVisitante.options[0] ? selectResidenciaVisitante.options[0].outerHTML : "<option value=''>-- Seleccione --</option>";
     selectResidenciaVisitante.innerHTML = opcionResidencia;
 
     for (let i = 0; i < residenciasUnicas.length; i++) {
-        const opcion = document.createElement("option");
+        let opcion = document.createElement("option");
         opcion.value = residenciasUnicas[i];
         opcion.textContent = residenciasUnicas[i];
         selectResidenciaVisitante.appendChild(opcion);
     }
 
-    const opcionResidente = selectResidenteVehiculo.options[0] ? selectResidenteVehiculo.options[0].outerHTML : "<option value=''>-- Seleccione --</option>";
+    let opcionResidente = selectResidenteVehiculo.options[0] ? selectResidenteVehiculo.options[0].outerHTML : "<option value=''>-- Seleccione --</option>";
     selectResidenteVehiculo.innerHTML = opcionResidente;
 
     for (let i = 0; i < residentes.length; i++) {
-        const opcion = document.createElement("option");
+        let opcion = document.createElement("option");
         opcion.value = String(i);
         opcion.textContent = nombreCompletoResidente(residentes[i]) + " - " + residentes[i].residenciaId;
         selectResidenteVehiculo.appendChild(opcion);
@@ -101,15 +111,15 @@ function poblarSelects() {
 }
 
 function enlazarEventos() {
-    ui.visitantesFormulario.addEventListener("submit", registrarVisitante);
-    ui.vehiculosFormulario.addEventListener("submit", registrarVehiculo);
+    visitantesFormulario.addEventListener("submit", registrarVisitante);
+    vehiculosFormulario.addEventListener("submit", registrarVehiculo);
 
-    enlazarBotonLimpiar(ui.visitantesFormulario);
-    enlazarBotonLimpiar(ui.vehiculosFormulario);
+    enlazarBotonLimpiar(visitantesFormulario);
+    enlazarBotonLimpiar(vehiculosFormulario);
 }
 
 function enlazarBotonLimpiar(formulario) {
-    const boton = formulario.querySelector(".btn-limpiar");
+    let boton = formulario.querySelector(".btn-limpiar");
     if (!boton) {
         return;
     }
@@ -124,54 +134,55 @@ function enlazarBotonLimpiar(formulario) {
 function registrarVisitante(event) {
     event.preventDefault();
 
-    const form = ui.visitantesFormulario;
-    const inputs = form.querySelectorAll("input");
-    const selects = form.querySelectorAll("select");
+    let form = visitantesFormulario;
+    let inputs = form.querySelectorAll("input");
+    let selects = form.querySelectorAll("select");
 
-    const nombre = inputs[0].value.trim();
-    const residencia = selects[0].value.trim();
-    const rol = selects[1].value.trim();
-    const ingresoTexto = inputs[1].value.trim();
-    const salidaTexto = inputs[2].value.trim();
-    const estado = selects[2].value.trim().toUpperCase();
-    const placa = form.querySelector("#visitantePlacaVehiculo").value.trim().toUpperCase();
+    let nombre = inputs[0].value.trim();
+    let residencia = selects[0].value.trim();
+    let rol = selects[1].value.trim();
+    let ingresoTexto = inputs[1].value.trim();
+    let salidaTexto = inputs[2].value.trim();
+    let estadoRaw = selects[2].value.trim().toUpperCase();
+    let estado = estadoRaw === "ADENTRO" ? "Adentro" : "Afuera";
+    let placa = form.querySelector("#visitantePlacaVehiculo").value.trim().toUpperCase();
 
     limpiarMensajes(form);
     limpiarErrores(form);
 
     if (!nombre || !residencia || !rol || !ingresoTexto) {
-        mostrarError(form, "Complete los campos obligatorios.");
+        window.alert("Complete todos los campos.");
         return;
     }
 
     if (!fechaHoraValida(ingresoTexto)) {
-        mostrarError(form, "Fecha de ingreso invalida. Use YYYY-MM-DD HH:MM.");
+        window.alert("Fecha de ingreso invalida. Use YYYY-MM-DD HH:MM.");
         marcarError(inputs[1]);
         return;
     }
 
     if (salidaTexto) {
         if (!fechaHoraValida(salidaTexto)) {
-            mostrarError(form, "Fecha de salida invalida. Use YYYY-MM-DD HH:MM.");
+            window.alert("Fecha de salida invalida. Use YYYY-MM-DD HH:MM.");
             marcarError(inputs[2]);
             return;
         }
 
         if (new Date(salidaTexto.replace(" ", "T")) < new Date(ingresoTexto.replace(" ", "T"))) {
-            mostrarError(form, "La salida no puede ser menor al ingreso.");
+            window.alert("La fecha de salida no puede ser menor al ingreso.");
             marcarError(inputs[2]);
             return;
         }
     }
 
-    if (estado === "AFUERA" && !salidaTexto) {
-        mostrarError(form, "Si el estado es AFUERA, ingrese fecha de salida.");
+    if (estado === "Afuera" && !salidaTexto) {
+        window.alert("Si el estado es Afuera, ingrese fecha de salida.");
         marcarError(inputs[2]);
         return;
     }
 
     if (placa && !PATRON_PLACA.test(placa)) {
-        mostrarError(form, "Placa invalida. Ejemplo: ABC-123");
+        window.alert("Placa invalida. Ejemplo: ABC-123");
         marcarError(form.querySelector("#visitantePlacaVehiculo"));
         return;
     }
@@ -200,33 +211,36 @@ function registrarVisitante(event) {
 function registrarVehiculo(event) {
     event.preventDefault();
 
-    const form = ui.vehiculosFormulario;
-    const inputs = form.querySelectorAll("input");
-    const selects = form.querySelectorAll("select");
+    let form = vehiculosFormulario;
+    let inputs = form.querySelectorAll("input");
+    let selects = form.querySelectorAll("select");
 
-    const placa = inputs[0].value.trim().toUpperCase();
-    const descripcion = inputs[1].value.trim();
-    const indiceResidente = selects[0].value.trim();
-    const estado = selects[1].value.trim().toUpperCase();
+    let placa = inputs[0].value.trim().toUpperCase();
+    let descripcion = inputs[1].value.trim();
+    let indiceResidente = selects[0].value.trim();
+    let estadoRaw = selects[1].value.trim().toUpperCase();
+    let estado = estadoRaw === "ACTIVO" ? "Activo" : "Inactivo";
 
     limpiarMensajes(form);
     limpiarErrores(form);
 
     if (!placa || !descripcion || indiceResidente === "") {
-        mostrarError(form, "Complete los campos obligatorios.");
+        window.alert("Complete todos los campos.");
         return;
     }
 
     if (!PATRON_PLACA.test(placa)) {
-        mostrarError(form, "Placa invalida. Ejemplo: AAA-111");
+        window.alert("Placa invalida. Ejemplo: ABC-123");
         marcarError(inputs[0]);
         return;
     }
 
-    if (vehiculos.some(function (v) { return v.placa === placa; })) {
-        mostrarError(form, "La placa ya existe.");
-        marcarError(inputs[0]);
-        return;
+    for (let i = 0; i < vehiculos.length; i++) {
+        if (vehiculos[i].placa === placa) {
+            window.alert("La placa ya existe.");
+            marcarError(inputs[0]);
+            return;
+        }
     }
 
     vehiculos.push({
@@ -244,16 +258,16 @@ function registrarVehiculo(event) {
 }
 
 function renderVisitantes() {
-    ui.visitantesTabla.innerHTML = "";
+    visitantesTabla.innerHTML = "";
 
     if (visitantes.length === 0) {
-        ui.visitantesTabla.innerHTML = "<tr><td colspan='7' class='celda-vacia'>Sin visitantes registrados.</td></tr>";
+        visitantesTabla.innerHTML = "<tr><td colspan='7' class='celda-vacia'>Sin visitantes registrados.</td></tr>";
         return;
     }
 
     for (let i = 0; i < visitantes.length; i++) {
-        const v = visitantes[i];
-        const fila = document.createElement("tr");
+        let v = visitantes[i];
+        let fila = document.createElement("tr");
 
         let html = "";
         html += "<td>" + v.nombre + " (" + v.rol + ")</td>";
@@ -266,10 +280,10 @@ function renderVisitantes() {
 
         fila.innerHTML = html;
 
-        const celdaAcciones = fila.lastElementChild;
+        let celdaAcciones = fila.lastElementChild;
 
-        if (v.estado === "ADENTRO") {
-            const btnSalida = document.createElement("button");
+        if (v.estado === "Adentro") {
+            let btnSalida = document.createElement("button");
             btnSalida.type = "button";
             btnSalida.className = "btn-editar";
             btnSalida.textContent = "Registrar salida";
@@ -279,11 +293,16 @@ function renderVisitantes() {
             celdaAcciones.appendChild(btnSalida);
         }
 
-        const btnEliminar = document.createElement("button");
+        let btnEliminar = document.createElement("button");
         btnEliminar.type = "button";
         btnEliminar.className = "btn-editar btn-accion-secundaria";
         btnEliminar.textContent = "Eliminar";
         btnEliminar.addEventListener("click", function () {
+            let confirmar = window.confirm("Desea eliminar este visitante?");
+            if (!confirmar) {
+                return;
+            }
+
             if (v.placaVehiculo !== "--") {
                 eliminarVehiculoVisitante(v.placaVehiculo);
             }
@@ -294,33 +313,38 @@ function renderVisitantes() {
         });
         celdaAcciones.appendChild(btnEliminar);
 
-        ui.visitantesTabla.appendChild(fila);
+        visitantesTabla.appendChild(fila);
     }
 }
 
 function renderVehiculos() {
-    ui.vehiculosTabla.innerHTML = "";
+    vehiculosTabla.innerHTML = "";
 
     if (vehiculos.length === 0) {
-        ui.vehiculosTabla.innerHTML = "<tr><td colspan='5' class='celda-vacia'>Sin vehiculos registrados.</td></tr>";
+        vehiculosTabla.innerHTML = "<tr><td colspan='5' class='celda-vacia'>Sin vehiculos registrados.</td></tr>";
         return;
     }
 
     for (let i = 0; i < vehiculos.length; i++) {
-        const v = vehiculos[i];
-        const fila = document.createElement("tr");
+        let v = vehiculos[i];
+        let fila = document.createElement("tr");
         fila.innerHTML = "<td>" + v.placa + "</td>" +
             "<td>" + v.descripcion + "</td>" +
             "<td>" + v.propietarioNombre + "</td>" +
             "<td class='" + claseEstado(v.estado) + "'>" + v.estado + "</td>" +
             "<td></td>";
 
-        const btnEliminar = document.createElement("button");
+        let btnEliminar = document.createElement("button");
         btnEliminar.type = "button";
         btnEliminar.className = "btn-editar";
         btnEliminar.textContent = "Eliminar";
         btnEliminar.addEventListener("click", function () {
-            const placa = v.placa;
+            let confirmar = window.confirm("Desea eliminar este vehiculo?");
+            if (!confirmar) {
+                return;
+            }
+
+            let placa = v.placa;
             vehiculos.splice(i, 1);
 
             for (let j = 0; j < visitantes.length; j++) {
@@ -335,24 +359,24 @@ function renderVehiculos() {
         });
 
         fila.lastElementChild.appendChild(btnEliminar);
-        ui.vehiculosTabla.appendChild(fila);
+        vehiculosTabla.appendChild(fila);
     }
 }
 
 function registrarSalidaVisitante(indice) {
-    const visitante = visitantes[indice];
-    if (!visitante || visitante.estado !== "ADENTRO") {
+    let visitante = visitantes[indice];
+    if (!visitante || visitante.estado !== "Adentro") {
         return;
     }
 
-    const salidaSugerida = ahoraTexto();
-    const salidaIngresada = window.prompt("Ingrese fecha y hora de salida (YYYY-MM-DD HH:MM):", salidaSugerida);
+    let salidaSugerida = ahoraTexto();
+    let salidaIngresada = window.prompt("Ingrese fecha y hora de salida (YYYY-MM-DD HH:MM):", salidaSugerida);
 
     if (salidaIngresada === null) {
         return;
     }
 
-    const salidaTexto = salidaIngresada.trim();
+    let salidaTexto = salidaIngresada.trim();
     if (!fechaHoraValida(salidaTexto)) {
         window.alert("Fecha de salida invalida. Use YYYY-MM-DD HH:MM.");
         return;
@@ -364,14 +388,13 @@ function registrarSalidaVisitante(indice) {
     }
 
     visitante.salidaTexto = salidaTexto;
-    visitante.estado = "AFUERA";
+    visitante.estado = "Afuera";
 
     if (visitante.placaVehiculo !== "--") {
-        const vehiculo = vehiculos.find(function (v) {
-            return v.placa === visitante.placaVehiculo && v.esVehiculoVisitante;
-        });
-        if (vehiculo) {
-            vehiculo.estado = "INACTIVO";
+        for (let i = 0; i < vehiculos.length; i++) {
+            if (vehiculos[i].placa === visitante.placaVehiculo && vehiculos[i].esVehiculoVisitante) {
+                vehiculos[i].estado = "Inactivo";
+            }
         }
     }
 
@@ -381,18 +404,16 @@ function registrarSalidaVisitante(indice) {
 }
 
 function registrarOActualizarVehiculoVisitante(nombre, placa, estadoVisitante) {
-    const estadoVehiculo = estadoVisitante === "ADENTRO" ? "ACTIVO" : "INACTIVO";
+    let estadoVehiculo = estadoVisitante === "Adentro" ? "Activo" : "Inactivo";
 
-    const existente = vehiculos.find(function (v) {
-        return v.placa === placa;
-    });
-
-    if (existente) {
-        existente.descripcion = "Vehiculo de visita";
-        existente.propietarioNombre = nombre;
-        existente.estado = estadoVehiculo;
-        existente.esVehiculoVisitante = true;
-        return;
+    for (let i = 0; i < vehiculos.length; i++) {
+        if (vehiculos[i].placa === placa) {
+            vehiculos[i].descripcion = "Vehiculo de visita";
+            vehiculos[i].propietarioNombre = nombre;
+            vehiculos[i].estado = estadoVehiculo;
+            vehiculos[i].esVehiculoVisitante = true;
+            return;
+        }
     }
 
     vehiculos.push({
@@ -405,9 +426,12 @@ function registrarOActualizarVehiculoVisitante(nombre, placa, estadoVisitante) {
 }
 
 function eliminarVehiculoVisitante(placa) {
-    const indice = vehiculos.findIndex(function (v) {
-        return v.placa === placa && v.esVehiculoVisitante;
-    });
+    let indice = -1;
+    for (let i = 0; i < vehiculos.length; i++) {
+        if (vehiculos[i].placa === placa && vehiculos[i].esVehiculoVisitante) {
+            indice = i;
+        }
+    }
 
     if (indice >= 0) {
         vehiculos.splice(indice, 1);
@@ -415,112 +439,124 @@ function eliminarVehiculoVisitante(placa) {
 }
 
 function actualizarInicio() {
-    if (!ui.tarjetasResumen || ui.tarjetasResumen.length < 4) {
+    if (!tarjetasResumen || tarjetasResumen.length < 4) {
         return;
     }
 
-    const hoy = hoyTexto();
-    const visitantesHoy = visitantes.filter(function (v) {
-        return v.ingresoTexto.startsWith(hoy);
-    }).length;
+    let hoy = hoyTexto();
+    let visitantesHoy = 0;
+    for (let i = 0; i < visitantes.length; i++) {
+        if (visitantes[i].ingresoTexto.substring(0, 10) === hoy) {
+            visitantesHoy++;
+        }
+    }
 
-    const vehiculosActivos = vehiculos.filter(function (v) {
-        return v.estado === "ACTIVO";
-    }).length;
+    let vehiculosActivos = 0;
+    for (let i = 0; i < vehiculos.length; i++) {
+        if (vehiculos[i].estado === "Activo") {
+            vehiculosActivos++;
+        }
+    }
 
-    ui.tarjetasResumen[0].textContent = String(visitantesHoy);
-    ui.tarjetasResumen[1].textContent = "0";
-    ui.tarjetasResumen[2].textContent = "0";
-    ui.tarjetasResumen[3].textContent = String(vehiculosActivos);
+    tarjetasResumen[0].textContent = String(visitantesHoy);
+    tarjetasResumen[1].textContent = "0";
+    tarjetasResumen[2].textContent = "0";
+    tarjetasResumen[3].textContent = String(vehiculosActivos);
 
-    if (!ui.tablaInicio) {
+    if (!tablaInicio) {
         return;
     }
 
-    ui.tablaInicio.innerHTML = "";
+    tablaInicio.innerHTML = "";
 
-    const ultimos = visitantes.slice(-5).reverse();
+    let ultimos = [];
+    for (let i = visitantes.length - 1; i >= 0; i--) {
+        ultimos.push(visitantes[i]);
+        if (ultimos.length === 5) {
+            break;
+        }
+    }
     if (ultimos.length === 0) {
-        ui.tablaInicio.innerHTML = "<tr><td colspan='4' class='celda-vacia'>No hay visitas registradas hoy.</td></tr>";
+        tablaInicio.innerHTML = "<tr><td colspan='4' class='celda-vacia'>No hay visitas registradas hoy.</td></tr>";
         return;
     }
 
     for (let i = 0; i < ultimos.length; i++) {
-        const v = ultimos[i];
-        const fila = document.createElement("tr");
+        let v = ultimos[i];
+        let fila = document.createElement("tr");
         fila.innerHTML = "<td>" + v.nombre + "</td>" +
             "<td>" + v.residencia + "</td>" +
             "<td>" + v.ingresoTexto + "</td>" +
             "<td class='" + claseEstado(v.estado) + "'>" + v.estado + "</td>";
-        ui.tablaInicio.appendChild(fila);
+        tablaInicio.appendChild(fila);
     }
 }
 
 function mostrarError(formulario, texto) {
-    const error = formulario.querySelector(".mensaje-error");
-    const exito = formulario.querySelector(".mensaje-exito");
+    let error = formulario.querySelector(".mensaje-error");
+    let exito = formulario.querySelector(".mensaje-exito");
 
     if (exito) {
-        exito.classList.remove("mensaje-visible");
+        exito.style.display = "none";
         exito.textContent = "";
     }
 
     if (error) {
         error.textContent = texto;
-        error.classList.add("mensaje-visible");
+        error.style.display = "block";
     }
 }
 
 function mostrarExito(formulario, texto) {
-    const error = formulario.querySelector(".mensaje-error");
-    const exito = formulario.querySelector(".mensaje-exito");
+    let error = formulario.querySelector(".mensaje-error");
+    let exito = formulario.querySelector(".mensaje-exito");
 
     if (error) {
-        error.classList.remove("mensaje-visible");
+        error.style.display = "none";
         error.textContent = "";
     }
 
     if (exito) {
         exito.textContent = texto;
-        exito.classList.add("mensaje-visible");
+        exito.style.display = "block";
     }
 }
 
 function limpiarMensajes(formulario) {
-    const error = formulario.querySelector(".mensaje-error");
-    const exito = formulario.querySelector(".mensaje-exito");
+    let error = formulario.querySelector(".mensaje-error");
+    let exito = formulario.querySelector(".mensaje-exito");
 
     if (error) {
-        error.classList.remove("mensaje-visible");
+        error.style.display = "none";
         error.textContent = "";
     }
 
     if (exito) {
-        exito.classList.remove("mensaje-visible");
+        exito.style.display = "none";
         exito.textContent = "";
     }
 }
 
 function limpiarErrores(formulario) {
-    const campos = formulario.querySelectorAll("input, select, textarea");
+    let campos = formulario.querySelectorAll("input, select, textarea");
     for (let i = 0; i < campos.length; i++) {
-        campos[i].classList.remove("campo-error");
+        campos[i].style.borderColor = "";
     }
 }
 
 function marcarError(campo) {
     if (campo) {
-        campo.classList.add("campo-error");
+        campo.style.borderColor = "#c21c1c";
     }
 }
 
 function fechaHoraValida(texto) {
-    const m = texto.match(PATRON_FECHA_HORA);
+    let m = texto.match(PATRON_FECHA_HORA);
     if (!m) {
         return false;
     }
 
-    const fecha = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));
+    let fecha = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));
     return fecha.getFullYear() === Number(m[1]) &&
         fecha.getMonth() === Number(m[2]) - 1 &&
         fecha.getDate() === Number(m[3]) &&
@@ -533,7 +569,7 @@ function nombreCompletoResidente(r) {
 }
 
 function claseEstado(estado) {
-    const e = estado.toUpperCase();
+    let e = estado.toUpperCase();
     if (e === "ACTIVO" || e === "ADENTRO" || e === "ENTREGADO") {
         return "estado-activo";
     }
@@ -544,27 +580,27 @@ function claseEstado(estado) {
 }
 
 function hoyTexto() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
+    let d = new Date();
+    let y = d.getFullYear();
+    let m = String(d.getMonth() + 1).padStart(2, "0");
+    let day = String(d.getDate()).padStart(2, "0");
     return y + "-" + m + "-" + day;
 }
 
 function ahoraTexto() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
+    let d = new Date();
+    let y = d.getFullYear();
+    let m = String(d.getMonth() + 1).padStart(2, "0");
+    let day = String(d.getDate()).padStart(2, "0");
+    let h = String(d.getHours()).padStart(2, "0");
+    let min = String(d.getMinutes()).padStart(2, "0");
     return y + "-" + m + "-" + day + " " + h + ":" + min;
 }
 
 function actualizarNavegacion(idSeccion) {
-    const links = document.querySelectorAll(".navbar .nav-link");
+    let links = document.querySelectorAll(".navbar .nav-link");
     for (let i = 0; i < links.length; i++) {
-        const onclick = links[i].getAttribute("onclick");
+        let onclick = links[i].getAttribute("onclick");
         if (onclick && onclick.indexOf("'" + idSeccion + "'") !== -1) {
             links[i].classList.add("activo");
         } else {

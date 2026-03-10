@@ -45,6 +45,10 @@ footer {
     color: #dce6f0 !important;
 }
 
+.nav-logout {
+    color: #f0a0a0 !important;
+}
+
 .nav-link:hover,
 .nav-link.activo {
     color: #ffffff !important;
@@ -227,6 +231,14 @@ tbody tr:hover {
     display: none;
 }
 
+.mensaje-visible {
+    display: block;
+}
+
+.campo-error {
+    border-color: rgb(194, 28, 28) !important;
+}
+
 .estado-activo {
     color: rgb(27, 131, 27);
     font-weight: bold;
@@ -240,4 +252,17 @@ tbody tr:hover {
 .estado-inactivo {
     color: rgb(194, 28, 28);
     font-weight: bold;
+}
+
+.texto-consulta {
+    color: #969191;
+    font-size: 0.9em;
+}
+
+.celda-vacia {
+    text-align: center;
+}
+
+.btn-accion-secundaria {
+    margin-left: 6px;
 }

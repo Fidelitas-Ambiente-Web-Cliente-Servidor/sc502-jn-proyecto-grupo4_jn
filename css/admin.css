@@ -229,28 +229,36 @@ tbody tr:hover {
 }
 
 .mensaje-error {
-    color: rgb(194, 28, 28);
+    color: #c21c1c;
     font-size: 0.85em;
     display: none;
 }
 
 .mensaje-exito {
-    color: rgb(27, 131, 27);
+    color: #1b831b;
     font-size: 0.85em;
     display: none;
 }
 
+.mensaje-visible {
+    display: block;
+}
+
+.campo-error {
+    border-color: #c21c1c !important;
+}
+
 .estado-activo {
-    color: rgb(27, 131, 27);
+    color: #1b831b;
     font-weight: bold;
 }
 
 .estado-pendiente {
-    color: rgb(225, 153, 17);
+    color: #e19911;
     font-weight: bold;
 }
 
 .estado-inactivo {
-    color: rgb(194, 28, 28);
+    color: #c21c1c;
     font-weight: bold;
 }

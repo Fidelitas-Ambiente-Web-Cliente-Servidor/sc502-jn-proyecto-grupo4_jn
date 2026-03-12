@@ -33,7 +33,34 @@ let residentes = [
     }
 ];
 
-let eventos = [];
+let eventos = [
+    {
+        descripcion: "Panel inicializado",
+        tipo: "Sistema",
+        fecha: hoyTexto(),
+        estado: "Activo"
+    }
+];
+
+let facturas = [
+    {
+        fecha: "2026-03-01",
+        descripcion: "Pago mantenimiento marzo",
+        residente: "Sebastian Rojas",
+        tipoPago: "Mantenimiento",
+        formaPago: "Transferencia",
+        estado: "Pendiente"
+    }
+];
+
+let servicios = [
+    {
+        descripcion: "Revisión eléctrica",
+        tipo: "Electricidad",
+        fechaSalida: "2026-03-03",
+        estado: "Activo"
+    }
+];
 
 let tarjetasResumen;
 let tablaInicio;
@@ -52,18 +79,19 @@ let editandoGuardiaId = null;
 let editandoResidenciaId = null;
 let editandoResidenteId = null;
 
-function mostrarSeccion(id) {
+function mostrarSeccion(idSeccion) {
     let secciones = document.querySelectorAll(".seccion");
+
     for (let i = 0; i < secciones.length; i++) {
         secciones[i].classList.remove("activa");
     }
 
-    let seccion = document.getElementById(id);
+    let seccion = document.getElementById(idSeccion);
     if (seccion) {
         seccion.classList.add("activa");
     }
 
-    actualizarNavegacion(id);
+    actualizarNavegacion(idSeccion);
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -83,23 +111,43 @@ document.addEventListener("DOMContentLoaded", function () {
     renderGuardias();
     renderResidencias();
     renderResidentes();
+    mostrarFacturas();
+    mostrarServicios();
+    mostrarEventos();
+    mostrarEventosInicio();
     actualizarInicio();
-    registrarIncidente("Panel inicializado", "Sistema", "Activo");
     actualizarNavegacion("inicio");
 });
 
 function enlazarEventos() {
-    guardiasFormulario.addEventListener("submit", registrarGuardia);
-    residenciasFormulario.addEventListener("submit", registrarResidencia);
-    residentesFormulario.addEventListener("submit", registrarResidente);
+    if (guardiasFormulario) {
+        guardiasFormulario.addEventListener("submit", registrarGuardia);
+        enlazarBotonLimpiar(guardiasFormulario, "guardia");
+    }
 
-    guardiasTabla.addEventListener("click", accionesGuardias);
-    residenciasTabla.addEventListener("click", accionesResidencias);
-    residentesTabla.addEventListener("click", accionesResidentes);
+    if (residenciasFormulario) {
+        residenciasFormulario.addEventListener("submit", registrarResidencia);
+        enlazarBotonLimpiar(residenciasFormulario, "residencia");
+    }
 
-    enlazarBotonLimpiar(guardiasFormulario, "guardia");
-    enlazarBotonLimpiar(residenciasFormulario, "residencia");
-    enlazarBotonLimpiar(residentesFormulario, "residente");
+    if (residentesFormulario) {
+        residentesFormulario.addEventListener("submit", registrarResidente);
+        enlazarBotonLimpiar(residentesFormulario, "residente");
+    }
+
+    if (guardiasTabla) {
+        guardiasTabla.addEventListener("click", accionesGuardias);
+    }
+
+    if (residenciasTabla) {
+        residenciasTabla.addEventListener("click", accionesResidencias);
+    }
+
+    if (residentesTabla) {
+        residentesTabla.addEventListener("click", accionesResidentes);
+    }
+
+    enlazarEventosFacturasServiciosEventos();
 }
 
 function enlazarBotonLimpiar(formulario, tipo) {
@@ -110,12 +158,15 @@ function enlazarBotonLimpiar(formulario, tipo) {
 
     boton.addEventListener("click", function () {
         formulario.reset();
+
         if (tipo === "guardia") {
             editandoGuardiaId = null;
         }
+
         if (tipo === "residencia") {
             editandoResidenciaId = null;
         }
+
         if (tipo === "residente") {
             editandoResidenteId = null;
         }
@@ -295,10 +346,6 @@ function registrarResidente(event) {
 
 function accionesGuardias(event) {
     let target = event.target;
-    if (!(target instanceof HTMLElement)) {
-        return;
-    }
-
     let accion = target.getAttribute("data-accion");
     let id = Number(target.getAttribute("data-id"));
 
@@ -314,10 +361,6 @@ function accionesGuardias(event) {
 
 function accionesResidencias(event) {
     let target = event.target;
-    if (!(target instanceof HTMLElement)) {
-        return;
-    }
-
     let accion = target.getAttribute("data-accion");
     let id = Number(target.getAttribute("data-id"));
 
@@ -333,10 +376,6 @@ function accionesResidencias(event) {
 
 function accionesResidentes(event) {
     let target = event.target;
-    if (!(target instanceof HTMLElement)) {
-        return;
-    }
-
     let accion = target.getAttribute("data-accion");
     let id = Number(target.getAttribute("data-id"));
 
@@ -483,6 +522,10 @@ function eliminarResidente(id) {
 }
 
 function renderGuardias() {
+    if (!guardiasTabla) {
+        return;
+    }
+
     guardiasTabla.innerHTML = "";
 
     if (guardias.length === 0) {
@@ -494,7 +537,8 @@ function renderGuardias() {
         let g = guardias[i];
         let fila = document.createElement("tr");
 
-        fila.innerHTML = "<td>" + g.nombre + "</td>" +
+        fila.innerHTML =
+            "<td>" + g.nombre + "</td>" +
             "<td>" + g.apellidoPaterno + " " + g.apellidoMaterno + "</td>" +
             "<td>" + g.telefono + "</td>" +
             "<td>" + g.correo + "</td>" +
@@ -509,6 +553,10 @@ function renderGuardias() {
 }
 
 function renderResidencias() {
+    if (!residenciasTabla) {
+        return;
+    }
+
     residenciasTabla.innerHTML = "";
 
     if (residencias.length === 0) {
@@ -521,7 +569,8 @@ function renderResidencias() {
         let r = residencias[i];
         let fila = document.createElement("tr");
 
-        fila.innerHTML = "<td>" + r.id + "</td>" +
+        fila.innerHTML =
+            "<td>" + r.id + "</td>" +
             "<td>" + Number(r.montoAlquiler).toLocaleString("es-CR") + "</td>" +
             "<td>" + Number(r.montoMantenimiento).toLocaleString("es-CR") + "</td>" +
             "<td>" + r.tipoPago + "</td>" +
@@ -538,6 +587,10 @@ function renderResidencias() {
 }
 
 function renderResidentes() {
+    if (!residentesTabla) {
+        return;
+    }
+
     residentesTabla.innerHTML = "";
 
     if (residentes.length === 0) {
@@ -549,7 +602,8 @@ function renderResidentes() {
         let r = residentes[i];
         let fila = document.createElement("tr");
 
-        fila.innerHTML = "<td>" + r.nombre + "</td>" +
+        fila.innerHTML =
+            "<td>" + r.nombre + "</td>" +
             "<td>" + r.apellidoPaterno + " " + r.apellidoMaterno + "</td>" +
             "<td>" + r.telefono + "</td>" +
             "<td>" + nombreResidencia(r.residenciaId) + "</td>" +
@@ -564,7 +618,15 @@ function renderResidentes() {
 }
 
 function poblarSelectResidencias() {
+    if (!residentesFormulario) {
+        return;
+    }
+
     let select = residentesFormulario.querySelectorAll("select")[0];
+    if (!select) {
+        return;
+    }
+
     let opcionBase = "<option value=''>-- Seleccione --</option>";
     select.innerHTML = opcionBase;
 
@@ -589,23 +651,45 @@ function registrarIncidente(descripcion, tipo, estado) {
     if (eventos.length > 8) {
         eventos.pop();
     }
+
+    mostrarEventos();
+    mostrarEventosInicio();
 }
 
 function actualizarInicio() {
-    if (!tarjetasResumen || tarjetasResumen.length < 3) {
-        return;
-    }
+    if (tarjetasResumen && tarjetasResumen.length >= 3) {
+        let guardiasActivos = 0;
 
-    let guardiasActivos = 0;
-    for (let i = 0; i < guardias.length; i++) {
-        if (guardias[i].estado === "Activo") {
-            guardiasActivos++;
+        for (let i = 0; i < guardias.length; i++) {
+            if (guardias[i].estado === "Activo") {
+                guardiasActivos++;
+            }
+        }
+
+        tarjetasResumen[0].textContent = String(guardiasActivos);
+        tarjetasResumen[1].textContent = String(residentes.length);
+        tarjetasResumen[2].textContent = String(residencias.length);
+
+        if (tarjetasResumen.length > 4) {
+            let eventosActivos = 0;
+            for (let i = 0; i < eventos.length; i++) {
+                if (eventos[i].estado === "Activo") {
+                    eventosActivos++;
+                }
+            }
+            tarjetasResumen[4].textContent = String(eventosActivos);
+        }
+
+        if (tarjetasResumen.length > 5) {
+            let facturasPendientes = 0;
+            for (let i = 0; i < facturas.length; i++) {
+                if (facturas[i].estado === "Pendiente") {
+                    facturasPendientes++;
+                }
+            }
+            tarjetasResumen[5].textContent = String(facturasPendientes);
         }
     }
-
-    tarjetasResumen[0].textContent = String(guardiasActivos);
-    tarjetasResumen[1].textContent = String(residentes.length);
-    tarjetasResumen[2].textContent = String(residencias.length);
 
     if (!tablaInicio) {
         return;
@@ -626,11 +710,358 @@ function actualizarInicio() {
     for (let i = 0; i < limite; i++) {
         let e = eventos[i];
         let fila = document.createElement("tr");
-        fila.innerHTML = "<td>" + e.descripcion + "</td>" +
+
+        fila.innerHTML =
+            "<td>" + e.descripcion + "</td>" +
             "<td>" + e.tipo + "</td>" +
             "<td>" + e.fecha + "</td>" +
             "<td class='" + claseEstado(e.estado) + "'>" + e.estado + "</td>";
+
         tablaInicio.appendChild(fila);
+    }
+}
+
+function mostrarFacturas() {
+    let tablaFacturas = document.querySelector("#facturas tbody");
+    if (!tablaFacturas) {
+        return;
+    }
+
+    tablaFacturas.innerHTML = "";
+
+    for (let i = 0; i < facturas.length; i++) {
+        let fila = document.createElement("tr");
+
+        let columnaFecha = document.createElement("td");
+        columnaFecha.innerText = facturas[i].fecha;
+
+        let columnaDescripcion = document.createElement("td");
+        columnaDescripcion.innerText = facturas[i].descripcion;
+
+        let columnaResidente = document.createElement("td");
+        columnaResidente.innerText = facturas[i].residente;
+
+        let columnaTipoPago = document.createElement("td");
+        columnaTipoPago.innerText = facturas[i].tipoPago;
+
+        let columnaFormaPago = document.createElement("td");
+        columnaFormaPago.innerText = facturas[i].formaPago;
+
+        let columnaEstado = document.createElement("td");
+        columnaEstado.innerText = facturas[i].estado;
+
+        let columnaAcciones = document.createElement("td");
+        let botonEliminar = document.createElement("button");
+        botonEliminar.innerText = "Eliminar";
+
+        botonEliminar.addEventListener("click", function () {
+            facturas.splice(i, 1);
+            mostrarFacturas();
+            actualizarInicio();
+        });
+
+        columnaAcciones.appendChild(botonEliminar);
+
+        fila.appendChild(columnaFecha);
+        fila.appendChild(columnaDescripcion);
+        fila.appendChild(columnaResidente);
+        fila.appendChild(columnaTipoPago);
+        fila.appendChild(columnaFormaPago);
+        fila.appendChild(columnaEstado);
+        fila.appendChild(columnaAcciones);
+
+        tablaFacturas.appendChild(fila);
+    }
+}
+
+function mostrarServicios() {
+    let tablaServicios = document.querySelector("#servicios tbody");
+    if (!tablaServicios) {
+        return;
+    }
+
+    tablaServicios.innerHTML = "";
+
+    for (let i = 0; i < servicios.length; i++) {
+        let fila = document.createElement("tr");
+
+        let columnaDescripcion = document.createElement("td");
+        columnaDescripcion.innerText = servicios[i].descripcion;
+
+        let columnaTipo = document.createElement("td");
+        columnaTipo.innerText = servicios[i].tipo;
+
+        let columnaFechaSalida = document.createElement("td");
+        columnaFechaSalida.innerText = servicios[i].fechaSalida;
+
+        let columnaEstado = document.createElement("td");
+        columnaEstado.innerText = servicios[i].estado;
+
+        let columnaAcciones = document.createElement("td");
+        let botonEliminar = document.createElement("button");
+        botonEliminar.innerText = "Eliminar";
+
+        botonEliminar.addEventListener("click", function () {
+            servicios.splice(i, 1);
+            mostrarServicios();
+        });
+
+        columnaAcciones.appendChild(botonEliminar);
+
+        fila.appendChild(columnaDescripcion);
+        fila.appendChild(columnaTipo);
+        fila.appendChild(columnaFechaSalida);
+        fila.appendChild(columnaEstado);
+        fila.appendChild(columnaAcciones);
+
+        tablaServicios.appendChild(fila);
+    }
+}
+
+function mostrarEventos() {
+    let tablaEventos = document.querySelector("#eventos tbody");
+    if (!tablaEventos) {
+        return;
+    }
+
+    tablaEventos.innerHTML = "";
+
+    for (let i = 0; i < eventos.length; i++) {
+        let fila = document.createElement("tr");
+
+        let columnaDescripcion = document.createElement("td");
+        columnaDescripcion.innerText = eventos[i].descripcion;
+
+        let columnaTipo = document.createElement("td");
+        columnaTipo.innerText = eventos[i].tipo;
+
+        let columnaFecha = document.createElement("td");
+        columnaFecha.innerText = eventos[i].fecha;
+
+        let columnaEstado = document.createElement("td");
+        columnaEstado.innerText = eventos[i].estado;
+
+        let columnaAcciones = document.createElement("td");
+        let botonEliminar = document.createElement("button");
+        botonEliminar.innerText = "Eliminar";
+
+        botonEliminar.addEventListener("click", function () {
+            eventos.splice(i, 1);
+            mostrarEventos();
+            mostrarEventosInicio();
+            actualizarInicio();
+        });
+
+        columnaAcciones.appendChild(botonEliminar);
+
+        fila.appendChild(columnaDescripcion);
+        fila.appendChild(columnaTipo);
+        fila.appendChild(columnaFecha);
+        fila.appendChild(columnaEstado);
+        fila.appendChild(columnaAcciones);
+
+        tablaEventos.appendChild(fila);
+    }
+}
+
+function mostrarEventosInicio() {
+    let tabla = document.querySelector("#inicio tbody");
+    if (!tabla) {
+        return;
+    }
+
+    tabla.innerHTML = "";
+
+    for (let i = eventos.length - 1; i >= 0; i--) {
+        let fila = document.createElement("tr");
+
+        let columnaDescripcion = document.createElement("td");
+        columnaDescripcion.innerText = eventos[i].descripcion;
+
+        let columnaTipo = document.createElement("td");
+        columnaTipo.innerText = eventos[i].tipo;
+
+        let columnaFecha = document.createElement("td");
+        columnaFecha.innerText = eventos[i].fecha;
+
+        let columnaEstado = document.createElement("td");
+        columnaEstado.innerText = eventos[i].estado;
+
+        fila.appendChild(columnaDescripcion);
+        fila.appendChild(columnaTipo);
+        fila.appendChild(columnaFecha);
+        fila.appendChild(columnaEstado);
+
+        tabla.appendChild(fila);
+    }
+}
+
+function enlazarEventosFacturasServiciosEventos() {
+    let formularioFactura = document.querySelector("#facturas form");
+    let formularioServicio = document.querySelector("#servicios form");
+    let formularioEvento = document.querySelector("#eventos form");
+
+    if (formularioFactura) {
+        let inputsFactura = formularioFactura.querySelectorAll("input");
+        let selectsFactura = formularioFactura.querySelectorAll("select");
+        let botonLimpiarFactura = formularioFactura.querySelector(".btn-limpiar");
+        let selectResidenteFactura = selectsFactura[0];
+
+        if (selectResidenteFactura) {
+            selectResidenteFactura.innerHTML = "<option value=''>-- Seleccione --</option>";
+            for (let i = 0; i < residentes.length; i++) {
+                let opcion = document.createElement("option");
+                opcion.value = residentes[i].nombre + " " + residentes[i].apellidoPaterno;
+                opcion.innerText = residentes[i].nombre + " " + residentes[i].apellidoPaterno;
+                selectResidenteFactura.appendChild(opcion);
+            }
+        }
+
+        formularioFactura.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            let fecha = inputsFactura[0].value;
+            let descripcion = inputsFactura[1].value;
+            let residente = selectsFactura[0].value;
+            let tipoPago = selectsFactura[1].value;
+            let formaPago = selectsFactura[2].value;
+            let estado = selectsFactura[3].value;
+
+            if (fecha === "" || descripcion === "" || residente === "") {
+                if (fecha === "") {
+                    inputsFactura[0].style.borderColor = "red";
+                } else {
+                    inputsFactura[0].style.borderColor = "black";
+                }
+
+                if (descripcion === "") {
+                    inputsFactura[1].style.borderColor = "red";
+                } else {
+                    inputsFactura[1].style.borderColor = "black";
+                }
+
+                if (residente === "") {
+                    selectsFactura[0].style.borderColor = "red";
+                } else {
+                    selectsFactura[0].style.borderColor = "black";
+                }
+            } else {
+                let nuevaFactura = {
+                    fecha: fecha,
+                    descripcion: descripcion,
+                    residente: residente,
+                    tipoPago: tipoPago,
+                    formaPago: formaPago,
+                    estado: estado
+                };
+
+                facturas.push(nuevaFactura);
+                mostrarFacturas();
+                actualizarInicio();
+                limpiarFormularioFactura(formularioFactura);
+            }
+        });
+
+        if (botonLimpiarFactura) {
+            botonLimpiarFactura.addEventListener("click", function () {
+                limpiarFormularioFactura(formularioFactura);
+            });
+        }
+    }
+
+    if (formularioServicio) {
+        let inputsServicio = formularioServicio.querySelectorAll("input");
+        let selectsServicio = formularioServicio.querySelectorAll("select");
+        let botonLimpiarServicio = formularioServicio.querySelector(".btn-limpiar");
+
+        formularioServicio.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            let descripcion = inputsServicio[0].value;
+            let tipo = selectsServicio[0].value;
+            let fechaSalida = inputsServicio[1].value;
+            let estado = selectsServicio[1].value;
+
+            if (descripcion === "" || fechaSalida === "") {
+                if (descripcion === "") {
+                    inputsServicio[0].style.borderColor = "red";
+                } else {
+                    inputsServicio[0].style.borderColor = "black";
+                }
+
+                if (fechaSalida === "") {
+                    inputsServicio[1].style.borderColor = "red";
+                } else {
+                    inputsServicio[1].style.borderColor = "black";
+                }
+            } else {
+                let nuevoServicio = {
+                    descripcion: descripcion,
+                    tipo: tipo,
+                    fechaSalida: fechaSalida,
+                    estado: estado
+                };
+
+                servicios.push(nuevoServicio);
+                mostrarServicios();
+                limpiarFormularioServicio(formularioServicio);
+            }
+        });
+
+        if (botonLimpiarServicio) {
+            botonLimpiarServicio.addEventListener("click", function () {
+                limpiarFormularioServicio(formularioServicio);
+            });
+        }
+    }
+
+    if (formularioEvento) {
+        let textareaEvento = formularioEvento.querySelector("textarea");
+        let inputsEvento = formularioEvento.querySelectorAll("input");
+        let selectsEvento = formularioEvento.querySelectorAll("select");
+        let botonLimpiarEvento = formularioEvento.querySelector(".btn-limpiar");
+
+        formularioEvento.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            let descripcion = textareaEvento.value;
+            let tipo = selectsEvento[0].value;
+            let fecha = inputsEvento[0].value;
+            let estado = selectsEvento[1].value;
+
+            if (descripcion === "" || fecha === "") {
+                if (descripcion === "") {
+                    textareaEvento.style.borderColor = "red";
+                } else {
+                    textareaEvento.style.borderColor = "black";
+                }
+
+                if (fecha === "") {
+                    inputsEvento[0].style.borderColor = "red";
+                } else {
+                    inputsEvento[0].style.borderColor = "black";
+                }
+            } else {
+                let nuevoEvento = {
+                    descripcion: descripcion,
+                    tipo: tipo,
+                    fecha: fecha,
+                    estado: estado
+                };
+
+                eventos.push(nuevoEvento);
+                mostrarEventos();
+                mostrarEventosInicio();
+                actualizarInicio();
+                limpiarFormularioEvento(formularioEvento);
+            }
+        });
+
+        if (botonLimpiarEvento) {
+            botonLimpiarEvento.addEventListener("click", function () {
+                limpiarFormularioEvento(formularioEvento);
+            });
+        }
     }
 }
 
@@ -734,6 +1165,7 @@ function limpiarMensajes(formulario) {
 
 function actualizarNavegacion(idSeccion) {
     let links = document.querySelectorAll(".navbar .nav-link");
+
     for (let i = 0; i < links.length; i++) {
         let onclick = links[i].getAttribute("onclick");
         if (onclick && onclick.indexOf("'" + idSeccion + "'") !== -1) {
@@ -741,5 +1173,56 @@ function actualizarNavegacion(idSeccion) {
         } else {
             links[i].classList.remove("activo");
         }
+    }
+}
+
+function limpiarFormularioFactura(formulario) {
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].value = "";
+        inputs[i].style.borderColor = "black";
+    }
+
+    for (let i = 0; i < selects.length; i++) {
+        selects[i].selectedIndex = 0;
+        selects[i].style.borderColor = "black";
+    }
+}
+
+function limpiarFormularioServicio(formulario) {
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].value = "";
+        inputs[i].style.borderColor = "black";
+    }
+
+    for (let i = 0; i < selects.length; i++) {
+        selects[i].selectedIndex = 0;
+        selects[i].style.borderColor = "black";
+    }
+}
+
+function limpiarFormularioEvento(formulario) {
+    let textarea = formulario.querySelector("textarea");
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+
+    if (textarea) {
+        textarea.value = "";
+        textarea.style.borderColor = "black";
+    }
+
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].value = "";
+        inputs[i].style.borderColor = "black";
+    }
+
+    for (let i = 0; i < selects.length; i++) {
+        selects[i].selectedIndex = 0;
+        selects[i].style.borderColor = "black";
     }
 }

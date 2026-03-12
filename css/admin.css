@@ -262,3 +262,17 @@ tbody tr:hover {
     color: #c21c1c;
     font-weight: bold;
 }
+
+.bloque-formulario input:disabled,
+.bloque-formulario select:disabled,
+.bloque-formulario textarea:disabled {
+    background-color: #ffffff;
+    color: #938f8f;
+    cursor: not-allowed;
+    border-color: #d1cdcd;
+    opacity: 0.7;
+}
+
+.bloque-formulario h3.modo-edicion {
+    color: #1b831b;
+}

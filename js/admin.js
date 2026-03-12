@@ -35,6 +35,7 @@ let residentes = [
 
 let eventos = [
     {
+        id: 1,
         descripcion: "Panel inicializado",
         tipo: "Sistema",
         fecha: hoyTexto(),
@@ -44,6 +45,7 @@ let eventos = [
 
 let facturas = [
     {
+        id: 1,
         fecha: "2026-03-01",
         descripcion: "Pago mantenimiento marzo",
         residente: "Sebastian Rojas",
@@ -55,6 +57,7 @@ let facturas = [
 
 let servicios = [
     {
+        id: 1,
         descripcion: "Revisión eléctrica",
         tipo: "Electricidad",
         fechaSalida: "2026-03-03",
@@ -74,10 +77,16 @@ let residentesTabla;
 let ultimoIdGuardia = 1;
 let ultimoIdResidencia = 1;
 let ultimoIdResidente = 1;
+let ultimoIdFactura = 1;
+let ultimoIdServicio = 1;
+let ultimoIdEvento = 1;
 
 let editandoGuardiaId = null;
 let editandoResidenciaId = null;
 let editandoResidenteId = null;
+let editandoFacturaId = null;
+let editandoServicioId = null;
+let editandoEventoId = null;
 
 function mostrarSeccion(idSeccion) {
     let secciones = document.querySelectorAll(".seccion");
@@ -640,8 +649,10 @@ function poblarSelectResidencias() {
 
 function registrarIncidente(descripcion, tipo, estado) {
     let fecha = hoyTexto();
+    ultimoIdEvento++;
 
     eventos.unshift({
+        id: ultimoIdEvento,
         descripcion: descripcion,
         tipo: tipo,
         fecha: fecha,
@@ -729,46 +740,26 @@ function mostrarFacturas() {
 
     tablaFacturas.innerHTML = "";
 
+    if (facturas.length === 0) {
+        tablaFacturas.innerHTML = "<tr><td colspan='7' class='celda-vacia'>Sin facturas registradas.</td></tr>";
+        return;
+    }
+
     for (let i = 0; i < facturas.length; i++) {
+        let f = facturas[i];
         let fila = document.createElement("tr");
 
-        let columnaFecha = document.createElement("td");
-        columnaFecha.innerText = facturas[i].fecha;
-
-        let columnaDescripcion = document.createElement("td");
-        columnaDescripcion.innerText = facturas[i].descripcion;
-
-        let columnaResidente = document.createElement("td");
-        columnaResidente.innerText = facturas[i].residente;
-
-        let columnaTipoPago = document.createElement("td");
-        columnaTipoPago.innerText = facturas[i].tipoPago;
-
-        let columnaFormaPago = document.createElement("td");
-        columnaFormaPago.innerText = facturas[i].formaPago;
-
-        let columnaEstado = document.createElement("td");
-        columnaEstado.innerText = facturas[i].estado;
-
-        let columnaAcciones = document.createElement("td");
-        let botonEliminar = document.createElement("button");
-        botonEliminar.innerText = "Eliminar";
-
-        botonEliminar.addEventListener("click", function () {
-            facturas.splice(i, 1);
-            mostrarFacturas();
-            actualizarInicio();
-        });
-
-        columnaAcciones.appendChild(botonEliminar);
-
-        fila.appendChild(columnaFecha);
-        fila.appendChild(columnaDescripcion);
-        fila.appendChild(columnaResidente);
-        fila.appendChild(columnaTipoPago);
-        fila.appendChild(columnaFormaPago);
-        fila.appendChild(columnaEstado);
-        fila.appendChild(columnaAcciones);
+        fila.innerHTML =
+            "<td>" + f.fecha + "</td>" +
+            "<td>" + f.descripcion + "</td>" +
+            "<td>" + f.residente + "</td>" +
+            "<td>" + f.tipoPago + "</td>" +
+            "<td>" + f.formaPago + "</td>" +
+            "<td class='" + claseEstado(f.estado) + "'>" + f.estado + "</td>" +
+            "<td>" +
+            "<button type='button' class='btn-editar' data-accion='editar-factura' data-id='" + f.id + "'>Editar</button>" +
+            "<button type='button' class='btn-eliminar' data-accion='eliminar-factura' data-id='" + f.id + "'>Eliminar</button>" +
+            "</td>";
 
         tablaFacturas.appendChild(fila);
     }
@@ -782,37 +773,24 @@ function mostrarServicios() {
 
     tablaServicios.innerHTML = "";
 
+    if (servicios.length === 0) {
+        tablaServicios.innerHTML = "<tr><td colspan='5' class='celda-vacia'>Sin servicios registrados.</td></tr>";
+        return;
+    }
+
     for (let i = 0; i < servicios.length; i++) {
+        let s = servicios[i];
         let fila = document.createElement("tr");
 
-        let columnaDescripcion = document.createElement("td");
-        columnaDescripcion.innerText = servicios[i].descripcion;
-
-        let columnaTipo = document.createElement("td");
-        columnaTipo.innerText = servicios[i].tipo;
-
-        let columnaFechaSalida = document.createElement("td");
-        columnaFechaSalida.innerText = servicios[i].fechaSalida;
-
-        let columnaEstado = document.createElement("td");
-        columnaEstado.innerText = servicios[i].estado;
-
-        let columnaAcciones = document.createElement("td");
-        let botonEliminar = document.createElement("button");
-        botonEliminar.innerText = "Eliminar";
-
-        botonEliminar.addEventListener("click", function () {
-            servicios.splice(i, 1);
-            mostrarServicios();
-        });
-
-        columnaAcciones.appendChild(botonEliminar);
-
-        fila.appendChild(columnaDescripcion);
-        fila.appendChild(columnaTipo);
-        fila.appendChild(columnaFechaSalida);
-        fila.appendChild(columnaEstado);
-        fila.appendChild(columnaAcciones);
+        fila.innerHTML =
+            "<td>" + s.descripcion + "</td>" +
+            "<td>" + s.tipo + "</td>" +
+            "<td>" + s.fechaSalida + "</td>" +
+            "<td class='" + claseEstado(s.estado) + "'>" + s.estado + "</td>" +
+            "<td>" +
+            "<button type='button' class='btn-editar' data-accion='editar-servicio' data-id='" + s.id + "'>Editar</button>" +
+            "<button type='button' class='btn-eliminar' data-accion='eliminar-servicio' data-id='" + s.id + "'>Eliminar</button>" +
+            "</td>";
 
         tablaServicios.appendChild(fila);
     }
@@ -826,39 +804,24 @@ function mostrarEventos() {
 
     tablaEventos.innerHTML = "";
 
+    if (eventos.length === 0) {
+        tablaEventos.innerHTML = "<tr><td colspan='5' class='celda-vacia'>Sin eventos registrados.</td></tr>";
+        return;
+    }
+
     for (let i = 0; i < eventos.length; i++) {
+        let e = eventos[i];
         let fila = document.createElement("tr");
 
-        let columnaDescripcion = document.createElement("td");
-        columnaDescripcion.innerText = eventos[i].descripcion;
-
-        let columnaTipo = document.createElement("td");
-        columnaTipo.innerText = eventos[i].tipo;
-
-        let columnaFecha = document.createElement("td");
-        columnaFecha.innerText = eventos[i].fecha;
-
-        let columnaEstado = document.createElement("td");
-        columnaEstado.innerText = eventos[i].estado;
-
-        let columnaAcciones = document.createElement("td");
-        let botonEliminar = document.createElement("button");
-        botonEliminar.innerText = "Eliminar";
-
-        botonEliminar.addEventListener("click", function () {
-            eventos.splice(i, 1);
-            mostrarEventos();
-            mostrarEventosInicio();
-            actualizarInicio();
-        });
-
-        columnaAcciones.appendChild(botonEliminar);
-
-        fila.appendChild(columnaDescripcion);
-        fila.appendChild(columnaTipo);
-        fila.appendChild(columnaFecha);
-        fila.appendChild(columnaEstado);
-        fila.appendChild(columnaAcciones);
+        fila.innerHTML =
+            "<td>" + e.descripcion + "</td>" +
+            "<td>" + e.tipo + "</td>" +
+            "<td>" + e.fecha + "</td>" +
+            "<td class='" + claseEstado(e.estado) + "'>" + e.estado + "</td>" +
+            "<td>" +
+            "<button type='button' class='btn-editar' data-accion='editar-evento' data-id='" + e.id + "'>Editar</button>" +
+            "<button type='button' class='btn-eliminar' data-accion='eliminar-evento' data-id='" + e.id + "'>Eliminar</button>" +
+            "</td>";
 
         tablaEventos.appendChild(fila);
     }
@@ -900,6 +863,84 @@ function enlazarEventosFacturasServiciosEventos() {
     let formularioFactura = document.querySelector("#facturas form");
     let formularioServicio = document.querySelector("#servicios form");
     let formularioEvento = document.querySelector("#eventos form");
+    let tablaFacturas = document.querySelector("#facturas tbody");
+    let tablaServicios = document.querySelector("#servicios tbody");
+    let tablaEventos = document.querySelector("#eventos tbody");
+
+    if (tablaFacturas) {
+        tablaFacturas.addEventListener("click", function (event) {
+            let target = event.target;
+            let accion = target.getAttribute("data-accion");
+            let id = Number(target.getAttribute("data-id"));
+
+            if (accion === "editar-factura") {
+                cargarFacturaEnFormulario(id);
+            }
+            if (accion === "eliminar-factura") {
+                let confirmar = window.confirm("¿Desea eliminar esta factura?");
+                if (!confirmar) { return; }
+                let idx = obtenerIndicePorId(facturas, id);
+                if (idx < 0) { return; }
+                facturas.splice(idx, 1);
+                if (editandoFacturaId === id) {
+                    editandoFacturaId = null;
+                    resetearFormularioFactura(formularioFactura);
+                }
+                mostrarFacturas();
+                actualizarInicio();
+            }
+        });
+    }
+
+    if (tablaServicios) {
+        tablaServicios.addEventListener("click", function (event) {
+            let target = event.target;
+            let accion = target.getAttribute("data-accion");
+            let id = Number(target.getAttribute("data-id"));
+
+            if (accion === "editar-servicio") {
+                cargarServicioEnFormulario(id);
+            }
+            if (accion === "eliminar-servicio") {
+                let confirmar = window.confirm("¿Desea eliminar este servicio?");
+                if (!confirmar) { return; }
+                let idx = obtenerIndicePorId(servicios, id);
+                if (idx < 0) { return; }
+                servicios.splice(idx, 1);
+                if (editandoServicioId === id) {
+                    editandoServicioId = null;
+                    resetearFormularioServicio(formularioServicio);
+                }
+                mostrarServicios();
+            }
+        });
+    }
+
+    if (tablaEventos) {
+        tablaEventos.addEventListener("click", function (event) {
+            let target = event.target;
+            let accion = target.getAttribute("data-accion");
+            let id = Number(target.getAttribute("data-id"));
+
+            if (accion === "editar-evento") {
+                cargarEventoEnFormulario(id);
+            }
+            if (accion === "eliminar-evento") {
+                let confirmar = window.confirm("¿Desea eliminar este evento?");
+                if (!confirmar) { return; }
+                let idx = obtenerIndicePorId(eventos, id);
+                if (idx < 0) { return; }
+                eventos.splice(idx, 1);
+                if (editandoEventoId === id) {
+                    editandoEventoId = null;
+                    resetearFormularioEvento(formularioEvento);
+                }
+                mostrarEventos();
+                mostrarEventosInicio();
+                actualizarInicio();
+            }
+        });
+    }
 
     if (formularioFactura) {
         let inputsFactura = formularioFactura.querySelectorAll("input");
@@ -920,6 +961,18 @@ function enlazarEventosFacturasServiciosEventos() {
         formularioFactura.addEventListener("submit", function (event) {
             event.preventDefault();
 
+            if (editandoFacturaId !== null) {
+                let factura = buscarPorId(facturas, editandoFacturaId);
+                if (!factura) { return; }
+                factura.estado = selectsFactura[3].value;
+                registrarIncidente("Factura actualizada", "Facturas", "Activo");
+                editandoFacturaId = null;
+                resetearFormularioFactura(formularioFactura);
+                mostrarFacturas();
+                actualizarInicio();
+                return;
+            }
+
             let fecha = inputsFactura[0].value;
             let descripcion = inputsFactura[1].value;
             let residente = selectsFactura[0].value;
@@ -933,20 +986,20 @@ function enlazarEventosFacturasServiciosEventos() {
                 } else {
                     inputsFactura[0].style.borderColor = "black";
                 }
-
                 if (descripcion === "") {
                     inputsFactura[1].style.borderColor = "red";
                 } else {
                     inputsFactura[1].style.borderColor = "black";
                 }
-
                 if (residente === "") {
                     selectsFactura[0].style.borderColor = "red";
                 } else {
                     selectsFactura[0].style.borderColor = "black";
                 }
             } else {
+                ultimoIdFactura++;
                 let nuevaFactura = {
+                    id: ultimoIdFactura,
                     fecha: fecha,
                     descripcion: descripcion,
                     residente: residente,
@@ -954,7 +1007,6 @@ function enlazarEventosFacturasServiciosEventos() {
                     formaPago: formaPago,
                     estado: estado
                 };
-
                 facturas.push(nuevaFactura);
                 mostrarFacturas();
                 actualizarInicio();
@@ -964,7 +1016,8 @@ function enlazarEventosFacturasServiciosEventos() {
 
         if (botonLimpiarFactura) {
             botonLimpiarFactura.addEventListener("click", function () {
-                limpiarFormularioFactura(formularioFactura);
+                editandoFacturaId = null;
+                resetearFormularioFactura(formularioFactura);
             });
         }
     }
@@ -977,6 +1030,17 @@ function enlazarEventosFacturasServiciosEventos() {
         formularioServicio.addEventListener("submit", function (event) {
             event.preventDefault();
 
+            if (editandoServicioId !== null) {
+                let servicio = buscarPorId(servicios, editandoServicioId);
+                if (!servicio) { return; }
+                servicio.estado = selectsServicio[1].value;
+                registrarIncidente("Servicio actualizado", "Servicios", "Activo");
+                editandoServicioId = null;
+                resetearFormularioServicio(formularioServicio);
+                mostrarServicios();
+                return;
+            }
+
             let descripcion = inputsServicio[0].value;
             let tipo = selectsServicio[0].value;
             let fechaSalida = inputsServicio[1].value;
@@ -988,20 +1052,20 @@ function enlazarEventosFacturasServiciosEventos() {
                 } else {
                     inputsServicio[0].style.borderColor = "black";
                 }
-
                 if (fechaSalida === "") {
                     inputsServicio[1].style.borderColor = "red";
                 } else {
                     inputsServicio[1].style.borderColor = "black";
                 }
             } else {
+                ultimoIdServicio++;
                 let nuevoServicio = {
+                    id: ultimoIdServicio,
                     descripcion: descripcion,
                     tipo: tipo,
                     fechaSalida: fechaSalida,
                     estado: estado
                 };
-
                 servicios.push(nuevoServicio);
                 mostrarServicios();
                 limpiarFormularioServicio(formularioServicio);
@@ -1010,7 +1074,8 @@ function enlazarEventosFacturasServiciosEventos() {
 
         if (botonLimpiarServicio) {
             botonLimpiarServicio.addEventListener("click", function () {
-                limpiarFormularioServicio(formularioServicio);
+                editandoServicioId = null;
+                resetearFormularioServicio(formularioServicio);
             });
         }
     }
@@ -1024,6 +1089,18 @@ function enlazarEventosFacturasServiciosEventos() {
         formularioEvento.addEventListener("submit", function (event) {
             event.preventDefault();
 
+            if (editandoEventoId !== null) {
+                let evento = buscarPorId(eventos, editandoEventoId);
+                if (!evento) { return; }
+                evento.estado = selectsEvento[1].value;
+                editandoEventoId = null;
+                resetearFormularioEvento(formularioEvento);
+                mostrarEventos();
+                mostrarEventosInicio();
+                actualizarInicio();
+                return;
+            }
+
             let descripcion = textareaEvento.value;
             let tipo = selectsEvento[0].value;
             let fecha = inputsEvento[0].value;
@@ -1035,20 +1112,20 @@ function enlazarEventosFacturasServiciosEventos() {
                 } else {
                     textareaEvento.style.borderColor = "black";
                 }
-
                 if (fecha === "") {
                     inputsEvento[0].style.borderColor = "red";
                 } else {
                     inputsEvento[0].style.borderColor = "black";
                 }
             } else {
+                ultimoIdEvento++;
                 let nuevoEvento = {
+                    id: ultimoIdEvento,
                     descripcion: descripcion,
                     tipo: tipo,
                     fecha: fecha,
                     estado: estado
                 };
-
                 eventos.push(nuevoEvento);
                 mostrarEventos();
                 mostrarEventosInicio();
@@ -1059,7 +1136,8 @@ function enlazarEventosFacturasServiciosEventos() {
 
         if (botonLimpiarEvento) {
             botonLimpiarEvento.addEventListener("click", function () {
-                limpiarFormularioEvento(formularioEvento);
+                editandoEventoId = null;
+                resetearFormularioEvento(formularioEvento);
             });
         }
     }
@@ -1174,6 +1252,156 @@ function actualizarNavegacion(idSeccion) {
             links[i].classList.remove("activo");
         }
     }
+}
+
+function cargarFacturaEnFormulario(id) {
+    let factura = buscarPorId(facturas, id);
+    if (!factura) { return; }
+
+    let formulario = document.querySelector("#facturas form");
+    if (!formulario) { return; }
+
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+    let titulo = formulario.querySelector("h3");
+
+    inputs[0].value = factura.fecha;
+    inputs[1].value = factura.descripcion;
+    selects[0].value = factura.residente;
+    selects[1].value = factura.tipoPago;
+    selects[2].value = factura.formaPago;
+    selects[3].value = factura.estado;
+
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].disabled = true;
+    }
+    selects[0].disabled = true;
+    selects[1].disabled = true;
+    selects[2].disabled = true;
+    selects[3].disabled = false;
+
+    if (titulo) { titulo.textContent = "Editar Estado de Factura"; titulo.classList.add("modo-edicion"); }
+    editandoFacturaId = id;
+}
+
+function cargarServicioEnFormulario(id) {
+    let servicio = buscarPorId(servicios, id);
+    if (!servicio) { return; }
+
+    let formulario = document.querySelector("#servicios form");
+    if (!formulario) { return; }
+
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+    let titulo = formulario.querySelector("h3");
+
+    inputs[0].value = servicio.descripcion;
+    selects[0].value = servicio.tipo;
+    inputs[1].value = servicio.fechaSalida;
+    selects[1].value = servicio.estado;
+
+    inputs[0].disabled = true;
+    selects[0].disabled = true;
+    inputs[1].disabled = true;
+    selects[1].disabled = false;
+
+    if (titulo) { titulo.textContent = "Editar Estado de Servicio"; titulo.classList.add("modo-edicion"); }
+    editandoServicioId = id;
+}
+
+function cargarEventoEnFormulario(id) {
+    let evento = buscarPorId(eventos, id);
+    if (!evento) { return; }
+
+    let formulario = document.querySelector("#eventos form");
+    if (!formulario) { return; }
+
+    let textarea = formulario.querySelector("textarea");
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+    let titulo = formulario.querySelector("h3");
+
+    textarea.value = evento.descripcion;
+    selects[0].value = evento.tipo;
+    inputs[0].value = evento.fecha;
+    selects[1].value = evento.estado;
+
+    textarea.disabled = true;
+    selects[0].disabled = true;
+    inputs[0].disabled = true;
+    selects[1].disabled = false;
+
+    if (titulo) { titulo.textContent = "Editar Estado de Evento"; titulo.classList.add("modo-edicion"); }
+    editandoEventoId = id;
+}
+
+function resetearFormularioFactura(formulario) {
+    if (!formulario) { return; }
+
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+    let titulo = formulario.querySelector("h3");
+
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].disabled = false;
+        inputs[i].value = "";
+        inputs[i].style.borderColor = "black";
+    }
+    for (let i = 0; i < selects.length; i++) {
+        selects[i].disabled = false;
+        selects[i].selectedIndex = 0;
+        selects[i].style.borderColor = "black";
+    }
+
+    if (titulo) { titulo.textContent = "Agregar Factura"; titulo.classList.remove("modo-edicion"); }
+}
+
+function resetearFormularioServicio(formulario) {
+    if (!formulario) { return; }
+
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+    let titulo = formulario.querySelector("h3");
+
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].disabled = false;
+        inputs[i].value = "";
+        inputs[i].style.borderColor = "black";
+    }
+    for (let i = 0; i < selects.length; i++) {
+        selects[i].disabled = false;
+        selects[i].selectedIndex = 0;
+        selects[i].style.borderColor = "black";
+    }
+
+    if (titulo) { titulo.textContent = "Agregar Servicio"; titulo.classList.remove("modo-edicion"); }
+}
+
+function resetearFormularioEvento(formulario) {
+    if (!formulario) { return; }
+
+    let textarea = formulario.querySelector("textarea");
+    let inputs = formulario.querySelectorAll("input");
+    let selects = formulario.querySelectorAll("select");
+    let titulo = formulario.querySelector("h3");
+
+    if (textarea) {
+        textarea.disabled = false;
+        textarea.value = "";
+        textarea.style.borderColor = "black";
+    }
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].disabled = false;
+        inputs[i].value = "";
+        inputs[i].style.borderColor = "black";
+    }
+    for (let i = 0; i < selects.length; i++) {
+        selects[i].disabled = false;
+        selects[i].selectedIndex = 0;
+        selects[i].style.borderColor = "black";
+    }
+
+    if (titulo) { titulo.textContent = "Agregar Evento"; titulo.classList.remove("modo-edicion"); }
 }
 
 function limpiarFormularioFactura(formulario) {

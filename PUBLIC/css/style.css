@@ -1,0 +1,213 @@
+:root {
+    --color-primario: #1b4d6e;
+    --color-guardia: #1b6b8a;
+    --color-admin: #1b4d6e;
+    --color-hover: #143d58;
+    --color-claro: #f0f7fb;
+    --color-texto: #1a2e35;
+    --color-gris: #6b7280;
+    --color-error: #c0392b;
+    --color-exito: #1e8a3a;
+    --radio-borde: 8px;
+    --sombra: 0 2px 12px rgba(0, 0, 0, 0.10);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--color-claro);
+    color: var(--color-texto);
+    font-family: 'Nunito', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    text-align: center;
+    padding: 28px 20px 22px;
+    background-color: var(--color-primario);
+    color: #ffffff;
+}
+
+.header-logo {
+    margin-bottom: 8px;
+    opacity: 0.85;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2em;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+header p {
+    margin: 6px 0 0 0;
+    font-size: 0.95em;
+    opacity: 0.85;
+}
+
+footer {
+    text-align: center;
+    padding: 14px 0;
+    background-color: #dde6ec;
+    color: #565454;
+    font-size: 0.88em;
+    margin-top: auto;
+}
+
+.login-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.seccion-login {
+    text-align: center;
+    width: 100%;
+    max-width: 780px;
+}
+
+.seccion-login h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--color-texto);
+}
+
+.subtitulo {
+    color: var(--color-gris);
+    margin-bottom: 30px;
+    font-size: 0.97em;
+}
+
+.contenedor-roles {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.card-rol {
+    background-color: #ffffff;
+    border-radius: var(--radio-borde);
+    padding: 32px 28px;
+    width: 310px;
+    text-align: left;
+    box-shadow: var(--sombra);
+    border-top: 4px solid var(--color-primario);
+}
+
+.card-guardia {
+    border-top-color: var(--color-guardia);
+}
+
+.card-admin {
+    border-top-color: var(--color-admin);
+}
+
+.card-icono {
+    text-align: center;
+    font-size: 2.2em;
+    margin-bottom: 10px;
+    color: var(--color-primario);
+}
+
+.card-guardia .card-icono {
+    color: var(--color-guardia);
+}
+
+.card-admin .card-icono {
+    color: var(--color-admin);
+}
+
+.card-rol h3 {
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+}
+
+.card-rol p {
+    text-align: center;
+    color: var(--color-gris);
+    font-size: 0.88em;
+    margin-bottom: 18px;
+}
+
+.card-rol form {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-rol label {
+    font-size: 0.88em;
+    font-weight: 600;
+    margin-top: 8px;
+    margin-bottom: 3px;
+    color: var(--color-texto);
+}
+
+.card-rol input[type="text"],
+.card-rol input[type="password"] {
+    padding: 8px 10px;
+    border: 1px solid #c5d5e0;
+    border-radius: 5px;
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.93em;
+    background-color: #f8fbfd;
+    transition: border-color 0.2s;
+}
+
+.card-rol input:focus {
+    border-color: var(--color-primario);
+    outline: none;
+    background-color: #ffffff;
+}
+
+.btn-ingresar {
+    padding: 10px;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 12px;
+    font-family: inherit;
+    font-size: 0.95em;
+    font-weight: 700;
+    transition: background-color 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+}
+
+.btn-guardia {
+    background-color: var(--color-guardia);
+}
+
+.btn-guardia:hover {
+    background-color: #145875;
+    transform: translateY(-1px);
+}
+
+.btn-admin {
+    background-color: var(--color-admin);
+}
+
+.btn-admin:hover {
+    background-color: var(--color-hover);
+    transform: translateY(-1px);
+}
+
+.mensaje-error {
+    color: var(--color-error);
+    font-size: 0.85em;
+    display: none;
+    margin-top: 4px;
+}

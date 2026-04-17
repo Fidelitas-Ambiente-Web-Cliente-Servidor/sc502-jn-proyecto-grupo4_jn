@@ -1,0 +1,1 @@
+(function(window,document){function $(sel){var n=document.querySelectorAll(sel);return n.length>1?n: n[0]||null;}window.$=window.jQuery=$;document.addEventListener('DOMContentLoaded',function(){});})(window,document);

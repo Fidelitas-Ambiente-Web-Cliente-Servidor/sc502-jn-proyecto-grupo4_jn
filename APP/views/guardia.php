@@ -1,6 +1,6 @@
 <?php
 $titulo = 'Panel Guardia – Las Aralias';
-$pageJs = '/PUBLIC/js/guardia.js';
+$pageJs = 'PUBLIC/js/guardia.js';
 include __DIR__ . '/header.php';
 $nombreGuardia = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Guardia', ENT_QUOTES);
 ?>

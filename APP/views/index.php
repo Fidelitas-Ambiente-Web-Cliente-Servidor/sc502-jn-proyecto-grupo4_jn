@@ -1,6 +1,6 @@
 <?php
 $titulo = 'Condominio Las Aralias - Ingreso';
-$pageJs = '/PUBLIC/js/auth.js';
+$pageJs = 'PUBLIC/js/auth.js';
 include __DIR__ . '/header.php';
 ?>
 <main class="login-main">

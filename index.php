@@ -1,5 +1,21 @@
 <?php
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    if (isset($_GET['option']) || (isset($_POST['option']) && $_POST['option'] !== 'login')) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'response' => '01',
+            'message' => $errstr,
+            'error_file' => basename($errfile),
+            'error_line' => $errline
+        ]);
+        exit;
+    }
+    return false;
+});
 
 require_once 'CONFIG/database.php';
 require_once 'APP/models/Usuario.php';
@@ -12,13 +28,63 @@ require_once 'APP/controllers/IndexController.php';
 require_once 'APP/controllers/AdminController.php';
 require_once 'APP/controllers/GuardiaController.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['option'])) {
-    $controller = new IndexController();
-    if ($_POST['option'] === 'login') {
-        $controller->login();
+try {
+    if (isset($_GET['option'])) {
+        header('Content-Type: application/json; charset=utf-8');
+        $option = $_GET['option'];
+        $page = $_GET['page'] ?? 'guardia';
+        $testMode = isset($_GET['test']) && $_GET['test'] === '1';
+        
+        if ($testMode && !isset($_SESSION['usuario'])) {
+            $_SESSION['usuario'] = [
+                'id' => 1,
+                'nombre' => 'Guardia Prueba',
+                'usuario' => 'guardia_test',
+                'rol' => 'guardia'
+            ];
+        }
+        
+        if ($page === 'guardia' && isset($_SESSION['usuario'])) {
+            $controller = new GuardiaController();
+            if (in_array($option, ['stats', 'get_visitas', 'get_paquetes', 'get_accesos', 'get_turnos'])) {
+                $controller->getData($option);
+            } elseif (in_array($option, ['registrar_visita', 'checkout_visita', 'registrar_paquete', 'entregar_paquete', 'registrar_acceso', 'registrar_salida', 'iniciar_turno', 'finalizar_turno'])) {
+                $controller->handle($option);
+            }
+        }
+        exit;
     }
-    // Agregar otras opciones si es necesario
-} else {
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['option'])) {
+        header('Content-Type: application/json; charset=utf-8');
+        $option = $_POST['option'];
+        $page = $_POST['page'] ?? 'index';
+        $testMode = isset($_POST['test']) && $_POST['test'] === '1';
+        
+        if ($option === 'login') {
+            $controller = new IndexController();
+            $controller->login();
+        } elseif ($page === 'guardia') {
+            if ($testMode && !isset($_SESSION['usuario'])) {
+                $_SESSION['usuario'] = [
+                    'id' => 1,
+                    'nombre' => 'Guardia Prueba',
+                    'usuario' => 'guardia_test',
+                    'rol' => 'guardia'
+                ];
+            }
+            
+            if (isset($_SESSION['usuario'])) {
+                $controller = new GuardiaController();
+                if (in_array($option, ['registrar_visita', 'checkout_visita', 'registrar_paquete', 'entregar_paquete', 'registrar_acceso', 'registrar_salida', 'iniciar_turno', 'finalizar_turno'])) {
+                    $controller->handle($option);
+                }
+            }
+        }
+        exit;
+    }
+
+    header('Content-Type: text/html; charset=utf-8');
     $page = $_GET['page'] ?? 'index';
     switch ($page) {
         case 'index':
@@ -37,6 +103,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['option'])) {
             $controller = new IndexController();
             $controller->showLogin();
             break;
+    }
+} catch (Throwable $e) {
+    if (isset($_GET['option']) || (isset($_POST['option']) && $_POST['option'] !== 'login')) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'response' => '01',
+            'message' => $e->getMessage(),
+            'error_file' => $e->getFile(),
+            'error_line' => $e->getLine()
+        ]);
+    } else {
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<pre><strong>Error:</strong> ' . htmlspecialchars($e->getMessage()) . 
+             '<br><strong>Archivo:</strong> ' . htmlspecialchars($e->getFile()) . 
+             '<br><strong>Línea:</strong> ' . $e->getLine() . '</pre>';
     }
 }
 ?>

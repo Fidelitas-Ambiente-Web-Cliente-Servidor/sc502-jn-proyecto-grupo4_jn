@@ -1,5 +1,6 @@
 $(function () {
     var url = 'index.php';
+    var testParam = window.location.search.includes('test=1') ? '&test=1' : '';
 
     function alerta(msg, tipo) {
         var el = $('<div class="alerta alerta-' + (tipo === 'ok' ? 'ok' : 'err') + '">').text(msg);
@@ -26,8 +27,8 @@ $(function () {
     $('.nav-sec').on('click', function (e) { e.preventDefault(); activar($(this).data('sec')); });
 
     function cargarStats() {
-        $.get(url + '?option=stats', function (raw) {
-            var d = JSON.parse(raw);
+        $.get(url + '?option=stats' + testParam, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             $('#stat-visitas').text(d.visitas_activas);
             $('#stat-paquetes').text(d.paquetes_pendientes);
             $('#stat-accesos').text(d.accesos_dentro);
@@ -48,8 +49,8 @@ $(function () {
     }
 
     function cargarVisitas() {
-        $.get(url + '?option=get_visitas', function (raw) {
-            var d = JSON.parse(raw);
+        $.get(url + '?option=get_visitas' + testParam, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             var tbA = $('#vis-activas tbody').empty();
             $.each(d.activas, function (i, v) {
                 tbA.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.cedula || '—') + '</td><td>' + v.residencia + '</td><td>' + (v.motivo || '—') + '</td><td>' + hora(v.fecha_entrada) + '</td><td><button class="btn-editar btn-accion-secundaria btn-checkout" data-id="' + v.id + '"><i class="fa-solid fa-right-from-bracket"></i> Check-out</button></td></tr>');
@@ -66,8 +67,8 @@ $(function () {
 
     $('#sec-visitas').on('click', '.btn-checkout', function () {
         if (!confirm('¿Confirmar salida?')) return;
-        $.post(url, {option: 'checkout_visita', id: $(this).data('id')}, function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'checkout_visita', id: $(this).data('id')}, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Check-out registrado.', 'ok'); cargarVisitas(); }
             else alerta('Error al registrar.', 'err');
         });
@@ -76,16 +77,16 @@ $(function () {
     $('#formVisita').on('submit', function (e) {
         e.preventDefault();
         if (!$('#v_nombre').val().trim() || !$('#v_residencia').val().trim()) { alerta('Nombre y residencia son requeridos.', 'err'); return; }
-        $.post(url, $(this).serialize() + '&option=registrar_visita', function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), $(this).serialize() + '&option=registrar_visita', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Visita registrada.', 'ok'); $('#formVisita')[0].reset(); cargarVisitas(); }
             else alerta('Error al registrar.', 'err');
         });
     });
 
     function cargarPaquetes() {
-        $.get(url + '?option=get_paquetes', function (raw) {
-            var d = JSON.parse(raw);
+        $.get(url + '?option=get_paquetes' + testParam, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             var tbP = $('#paq-pendientes tbody').empty();
             $.each(d.pendientes, function (i, p) {
                 tbP.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + (p.empresa || '—') + '</td><td>' + (p.descripcion || '—') + '</td><td>' + hora(p.fecha_recepcion) + '</td><td><button class="btn-editar btn-entregar" data-id="' + p.id + '"><i class="fa-solid fa-hand-holding-box"></i> Entregar</button></td></tr>');
@@ -102,8 +103,8 @@ $(function () {
 
     $('#sec-paquetes').on('click', '.btn-entregar', function () {
         if (!confirm('¿Confirmar entrega?')) return;
-        $.post(url, {option: 'entregar_paquete', id: $(this).data('id')}, function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'entregar_paquete', id: $(this).data('id')}, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Entrega registrada.', 'ok'); cargarPaquetes(); }
             else alerta('Error al registrar.', 'err');
         });
@@ -112,16 +113,16 @@ $(function () {
     $('#formPaquete').on('submit', function (e) {
         e.preventDefault();
         if (!$('#p_dest').val().trim() || !$('#p_res').val().trim()) { alerta('Destinatario y residencia son requeridos.', 'err'); return; }
-        $.post(url, $(this).serialize() + '&option=registrar_paquete', function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), $(this).serialize() + '&option=registrar_paquete', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Paquete registrado.', 'ok'); $('#formPaquete')[0].reset(); cargarPaquetes(); }
             else alerta('Error al registrar.', 'err');
         });
     });
 
     function cargarAccesos() {
-        $.get(url + '?option=get_accesos', function (raw) {
-            var d = JSON.parse(raw);
+        $.get(url + '?option=get_accesos' + testParam, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             var tbD = $('#acc-dentro tbody').empty();
             $.each(d.dentro, function (i, a) {
                 tbD.append('<tr><td>' + a.id + '</td><td>' + a.tipo + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + (a.residencia || '—') + '</td><td>' + hora(a.fecha_entrada) + '</td><td><button class="btn-editar btn-accion-secundaria btn-salida" data-id="' + a.id + '"><i class="fa-solid fa-arrow-right-from-bracket"></i> Salida</button></td></tr>');
@@ -138,8 +139,8 @@ $(function () {
 
     $('#sec-accesos').on('click', '.btn-salida', function () {
         if (!confirm('¿Registrar salida?')) return;
-        $.post(url, {option: 'registrar_salida', id: $(this).data('id')}, function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'registrar_salida', id: $(this).data('id')}, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Salida registrada.', 'ok'); cargarAccesos(); }
             else alerta('Error al registrar.', 'err');
         });
@@ -152,16 +153,16 @@ $(function () {
     $('#formAcceso').on('submit', function (e) {
         e.preventDefault();
         if (!$('#a_nombre').val().trim()) { alerta('El nombre es requerido.', 'err'); return; }
-        $.post(url, $(this).serialize() + '&option=registrar_acceso', function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), $(this).serialize() + '&option=registrar_acceso', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Acceso registrado.', 'ok'); $('#formAcceso')[0].reset(); $('#campoPlaca').hide(); cargarAccesos(); }
             else alerta('Error al registrar.', 'err');
         });
     });
 
     function cargarTurnos() {
-        $.get(url + '?option=get_turnos', function (raw) {
-            var d = JSON.parse(raw);
+        $.get(url + '?option=get_turnos' + testParam, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             var banner = $('#turno-banner');
             var sin = $('#turno-sin');
             var formT = $('#formTurno');
@@ -185,8 +186,8 @@ $(function () {
 
     $('#sec-turnos').on('click', '.btn-fin-turno', function () {
         if (!confirm('¿Finalizar turno actual?')) return;
-        $.post(url, {option: 'finalizar_turno', id: $(this).data('id')}, function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'finalizar_turno', id: $(this).data('id')}, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Turno finalizado.', 'ok'); cargarTurnos(); }
             else alerta('Error al finalizar.', 'err');
         });
@@ -194,8 +195,8 @@ $(function () {
 
     $('#formTurno').on('submit', function (e) {
         e.preventDefault();
-        $.post(url, $(this).serialize() + '&option=iniciar_turno', function (raw) {
-            var d = JSON.parse(raw);
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), $(this).serialize() + '&option=iniciar_turno', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Turno iniciado.', 'ok'); cargarTurnos(); }
             else alerta('Error al iniciar.', 'err');
         });

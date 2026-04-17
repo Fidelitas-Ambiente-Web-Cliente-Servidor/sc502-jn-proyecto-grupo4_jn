@@ -11,6 +11,7 @@ class GuardiaController {
     private $acceso;
     private $turno;
     private $db;
+    private $testMode = false;
 
     public function __construct() {
         if (!isset($_SESSION['usuario'])) { 
@@ -27,12 +28,41 @@ class GuardiaController {
 
     private function connectIfNeeded() {
         if ($this->db === null) {
-            $this->db = (new Database())->connect();
-            $this->visita  = new Visita($this->db);
-            $this->paquete = new Paquete($this->db);
-            $this->acceso  = new Acceso($this->db);
-            $this->turno   = new Turno($this->db);
+            if ($this->testMode) {
+                $this->db = 'mock';
+                return;
+            }
+            
+            try {
+                $this->db = (new Database())->connect();
+                $this->visita  = new Visita($this->db);
+                $this->paquete = new Paquete($this->db);
+                $this->acceso  = new Acceso($this->db);
+                $this->turno   = new Turno($this->db);
+            } catch (Exception $e) {
+                throw $e;
+            }
         }
+    }
+
+    private function getMockData($type) {
+        $mockData = [
+            'visitas' => [
+                ['id' => 1, 'nombre' => 'Juan Pérez', 'cedula' => '12345678', 'residencia' => 'Casa 5', 'motivo' => 'Visita familiar', 'fecha_entrada' => '2026-04-17 08:30:00', 'fecha_salida' => null, 'estado' => 'Activa'],
+                ['id' => 2, 'nombre' => 'María García', 'cedula' => '87654321', 'residencia' => 'Apto 3B', 'motivo' => 'Negocios', 'fecha_entrada' => '2026-04-17 09:15:00', 'fecha_salida' => null, 'estado' => 'Activa'],
+            ],
+            'paquetes' => [
+                ['id' => 1, 'destinatario' => 'Carlos López', 'residencia' => 'Casa 8', 'empresa' => 'Amazon', 'descripcion' => 'Caja mediana', 'fecha_recepcion' => '2026-04-17 10:00:00', 'fecha_entrega' => null, 'estado' => 'Pendiente'],
+                ['id' => 2, 'destinatario' => 'Ana Martínez', 'residencia' => 'Apto 2A', 'empresa' => 'Correos CR', 'descripcion' => 'Sobre importante', 'fecha_recepcion' => '2026-04-17 10:45:00', 'fecha_entrega' => null, 'estado' => 'Pendiente'],
+            ],
+            'accesos' => [
+                ['id' => 1, 'tipo' => 'Vehículo', 'nombre' => 'Técnico de mantenimiento', 'placa' => 'ABC-123', 'residencia' => 'Común', 'fecha_entrada' => '2026-04-17 07:00:00', 'fecha_salida' => null, 'estado' => 'Dentro'],
+            ],
+            'turnos' => [
+                ['id' => 1, 'guardia_nombre' => 'Guardia Prueba', 'fecha_inicio' => '2026-04-17 06:00:00', 'fecha_fin' => null, 'estado' => 'Activo'],
+            ]
+        ];
+        return $mockData[$type] ?? [];
     }
 
     public function index() {
@@ -43,6 +73,38 @@ class GuardiaController {
         try {
             $this->connectIfNeeded();
             $uid = $_SESSION['usuario']['id'] ?? null;
+            if ($this->testMode && $this->db === 'mock') {
+                $visitas = $this->getMockData('visitas');
+                $paquetes = $this->getMockData('paquetes');
+                $accesos = $this->getMockData('accesos');
+                $turnos = $this->getMockData('turnos');
+                
+                switch ($option) {
+                    case 'stats':
+                        echo json_encode([
+                            'visitas_activas' => count($visitas),
+                            'paquetes_pendientes' => count($paquetes),
+                            'accesos_dentro' => count($accesos),
+                            'turno_activo' => $turnos[0] ?? null,
+                            'visitas_list' => $visitas,
+                            'paquetes_list' => $paquetes,
+                        ]);
+                        break;
+                    case 'get_visitas':
+                        echo json_encode(['activas' => $visitas, 'hoy' => $visitas]);
+                        break;
+                    case 'get_paquetes':
+                        echo json_encode(['pendientes' => $paquetes, 'hoy' => $paquetes]);
+                        break;
+                    case 'get_accesos':
+                        echo json_encode(['dentro' => $accesos, 'hoy' => $accesos]);
+                        break;
+                    case 'get_turnos':
+                        echo json_encode(['activo' => $turnos[0] ?? null, 'recientes' => $turnos]);
+                        break;
+                }
+                return;
+            }
             switch ($option) {
                 case 'stats':
                     echo json_encode([
@@ -75,6 +137,10 @@ class GuardiaController {
     public function handle($option) {
         $uid = $_SESSION['usuario']['id'] ?? null;
         try {
+            if ($this->testMode && ($this->db === null || $this->db === 'mock')) {
+                echo json_encode(['response' => '00', 'message' => 'Acción simulada completada.']);
+                return;
+            }
             $this->connectIfNeeded();
             switch ($option) {
                 case 'registrar_visita':   $this->visita->registrar($_POST, $uid); break;

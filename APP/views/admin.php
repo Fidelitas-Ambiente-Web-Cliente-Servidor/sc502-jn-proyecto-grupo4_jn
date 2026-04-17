@@ -1,6 +1,6 @@
 <?php
 $titulo = 'Panel Administrador – Las Aralias';
-$pageJs = '/PUBLIC/js/admin.js';
+$pageJs = 'PUBLIC/js/admin.js';
 include __DIR__ . '/header.php';
 $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador', ENT_QUOTES);
 ?>

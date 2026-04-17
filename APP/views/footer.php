@@ -1,7 +1,7 @@
 <footer>
     <p>Proyecto SC-502 Ambiente Web Cliente Servidor</p>
 </footer>
-<script src="/PUBLIC/js/jquery.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <?php if (!empty($pageJs)): ?>
 <script src="<?php echo $pageJs; ?>"></script>
 <?php endif; ?>

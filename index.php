@@ -46,7 +46,7 @@ try {
         
         if ($page === 'guardia' && isset($_SESSION['usuario'])) {
             $controller = new GuardiaController();
-            if (in_array($option, ['stats', 'get_visitas', 'get_paquetes', 'get_accesos', 'get_turnos'])) {
+            if (in_array($option, ['stats', 'get_visitas', 'get_paquetes', 'get_accesos', 'get_turnos', 'get_roles'])) {
                 $controller->getData($option);
             } elseif (in_array($option, ['registrar_visita', 'checkout_visita', 'registrar_paquete', 'entregar_paquete', 'registrar_acceso', 'registrar_salida', 'iniciar_turno', 'finalizar_turno'])) {
                 $controller->handle($option);
@@ -58,7 +58,7 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['option'])) {
         header('Content-Type: application/json; charset=utf-8');
         $option = $_POST['option'];
-        $page = $_POST['page'] ?? 'index';
+        $page = $_POST['page'] ?? ((isset($_SESSION['usuario']) && $option !== 'login') ? 'guardia' : 'index');
         $testMode = isset($_POST['test']) && $_POST['test'] === '1';
         
         if ($option === 'login') {

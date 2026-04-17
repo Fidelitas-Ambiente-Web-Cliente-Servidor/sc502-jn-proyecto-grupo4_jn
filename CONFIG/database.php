@@ -1,13 +1,23 @@
 <?php
 class Database {
+    private $host = 'db';
+    private $db = 'appdb';
+    private $user = 'appuser';
+    private $pass = 'apppass';
+
     public function connect() {
         $conn = new mysqli(
-            getenv('DB_HOST') ?: 'db',
-            getenv('DB_USER') ?: 'root',
-            getenv('DB_PASS') ?: 'example',
-            getenv('DB_NAME') ?: 'aralias'
+            $this->host,
+            $this->user,
+            $this->pass,
+            $this->db
         );
-        if ($conn->connect_error) die('Error: ' . $conn->connect_error);
+
+        if ($conn->connect_error) {
+            die('Error conexion: ' . $conn->connect_error);
+        }
+
+        $conn->set_charset('utf8mb4');
         return $conn;
     }
 }

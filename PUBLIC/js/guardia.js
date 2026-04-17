@@ -9,8 +9,44 @@ $(function () {
     }
 
     function t(str, start, len) { return str ? str.substr(start, len) : '—'; }
-    function hora(str) { return t(str, 11, 5); }
+    function hora(str) {
+        if (!str) return '—';
+        var s = String(str).replace('T', ' ');
+        return s.length >= 16 ? s.substr(11, 5) : s;
+    }
+    function fechaHora(str) {
+        if (!str) return '—';
+        var s = String(str).replace('T', ' ');
+        return s.length >= 16 ? s.substr(0, 16) : s;
+    }
     function vacio(tb, cols, msg) { if (!tb.children().length) tb.append('<tr><td colspan="' + cols + '" class="celda-vacia">' + msg + '</td></tr>'); }
+
+    function cargarRoles() {
+        return $.get(url + '?option=get_roles' + testParam, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            var rolesVisita = d.roles_visita || [];
+            var rolesAcceso = d.roles_acceso || [];
+            var visita = $('#v_rol').empty();
+            var acceso = $('#a_rol').empty();
+            $.each(rolesVisita, function (i, r) {
+                var rolNombre = r.rol || r.ROL || '';
+                var option = $('<option>').val(rolNombre).text(rolNombre);
+                visita.append(option.clone());
+            });
+            $.each(rolesAcceso, function (i, r) {
+                var rolNombre = r.rol || r.ROL || '';
+                var option = $('<option>').val(rolNombre).text(rolNombre);
+                acceso.append(option.clone());
+            });
+            if (!visita.children().length) {
+                visita.append('<option value="visita">Visita</option>');
+            }
+            if (!acceso.children().length) {
+                acceso.append('<option value="residente">Residente</option>');
+                acceso.append('<option value="proveedor">Proveedor</option>');
+            }
+        });
+    }
 
     function activar(sec) {
         $('.seccion').hide();
@@ -36,13 +72,13 @@ $(function () {
 
             var tbV = $('#res-vis tbody').empty();
             $.each(d.visitas_list, function (i, v) {
-                tbV.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + v.residencia + '</td><td>' + (v.motivo || '—') + '</td><td>' + hora(v.fecha_entrada) + '</td></tr>');
+                tbV.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + (v.motivo || '—') + '</td><td>' + fechaHora(v.fecha_entrada) + '</td></tr>');
             });
-            vacio(tbV, 5, 'Sin visitas activas');
+            vacio(tbV, 6, 'Sin visitas activas');
 
             var tbP = $('#res-paq tbody').empty();
             $.each(d.paquetes_list, function (i, p) {
-                tbP.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + hora(p.fecha_recepcion) + '</td></tr>');
+                tbP.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td></tr>');
             });
             vacio(tbP, 4, 'Sin paquetes pendientes');
         });
@@ -53,15 +89,16 @@ $(function () {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             var tbA = $('#vis-activas tbody').empty();
             $.each(d.activas, function (i, v) {
-                tbA.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.cedula || '—') + '</td><td>' + v.residencia + '</td><td>' + (v.motivo || '—') + '</td><td>' + hora(v.fecha_entrada) + '</td><td><button class="btn-editar btn-accion-secundaria btn-checkout" data-id="' + v.id + '"><i class="fa-solid fa-right-from-bracket"></i> Check-out</button></td></tr>');
+                tbA.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + (v.cedula || '—') + '</td><td>' + v.residencia + '</td><td>' + (v.motivo || '—') + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td><button class="btn-editar btn-accion-secundaria btn-checkout" data-id="' + v.id + '"><i class="fa-solid fa-right-from-bracket"></i> Check-out</button></td></tr>');
             });
-            vacio(tbA, 7, 'Sin visitas activas');
+            vacio(tbA, 8, 'Sin visitas activas');
 
             var tbH = $('#vis-hoy tbody').empty();
             $.each(d.hoy, function (i, v) {
-                tbH.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + v.residencia + '</td><td>' + hora(v.fecha_entrada) + '</td><td>' + hora(v.fecha_salida) + '</td><td><span class="estado-' + (v.estado === 'Activa' ? 'activo' : 'inactivo') + '">' + v.estado + '</span></td></tr>');
+                var esActivoVisita = String(v.estado || '').toLowerCase() === 'adentro';
+                tbH.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td>' + fechaHora(v.fecha_salida) + '</td><td><span class="estado-' + (esActivoVisita ? 'activo' : 'inactivo') + '">' + v.estado + '</span></td></tr>');
             });
-            vacio(tbH, 6, 'Sin registros hoy');
+            vacio(tbH, 7, 'Sin registros hoy');
         });
     }
 
@@ -76,7 +113,7 @@ $(function () {
 
     $('#formVisita').on('submit', function (e) {
         e.preventDefault();
-        if (!$('#v_nombre').val().trim() || !$('#v_residencia').val().trim()) { alerta('Nombre y residencia son requeridos.', 'err'); return; }
+        if (!$('#v_rol').val() || !$('#v_nombre').val().trim() || !$('#v_residencia').val().trim()) { alerta('Rol, nombre y residencia son requeridos.', 'err'); return; }
         $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), $(this).serialize() + '&option=registrar_visita', function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Visita registrada.', 'ok'); $('#formVisita')[0].reset(); cargarVisitas(); }
@@ -89,13 +126,13 @@ $(function () {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             var tbP = $('#paq-pendientes tbody').empty();
             $.each(d.pendientes, function (i, p) {
-                tbP.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + (p.empresa || '—') + '</td><td>' + (p.descripcion || '—') + '</td><td>' + hora(p.fecha_recepcion) + '</td><td><button class="btn-editar btn-entregar" data-id="' + p.id + '"><i class="fa-solid fa-hand-holding-box"></i> Entregar</button></td></tr>');
+                tbP.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + (p.empresa || '—') + '</td><td>' + (p.descripcion || '—') + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td><button class="btn-editar btn-entregar" data-id="' + p.id + '"><i class="fa-solid fa-hand-holding-box"></i> Entregar</button></td></tr>');
             });
             vacio(tbP, 7, 'Sin paquetes pendientes');
 
             var tbH = $('#paq-hoy tbody').empty();
             $.each(d.hoy, function (i, p) {
-                tbH.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + hora(p.fecha_recepcion) + '</td><td>' + hora(p.fecha_entrega) + '</td><td><span class="estado-' + (p.estado === 'Pendiente' ? 'pendiente' : 'activo') + '">' + p.estado + '</span></td></tr>');
+                tbH.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td>' + fechaHora(p.fecha_entrega) + '</td><td><span class="estado-' + (p.estado === 'Pendiente' ? 'pendiente' : 'activo') + '">' + p.estado + '</span></td></tr>');
             });
             vacio(tbH, 6, 'Sin paquetes hoy');
         });
@@ -125,13 +162,13 @@ $(function () {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             var tbD = $('#acc-dentro tbody').empty();
             $.each(d.dentro, function (i, a) {
-                tbD.append('<tr><td>' + a.id + '</td><td>' + a.tipo + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + (a.residencia || '—') + '</td><td>' + hora(a.fecha_entrada) + '</td><td><button class="btn-editar btn-accion-secundaria btn-salida" data-id="' + a.id + '"><i class="fa-solid fa-arrow-right-from-bracket"></i> Salida</button></td></tr>');
+                tbD.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + (a.residencia || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td><button class="btn-editar btn-accion-secundaria btn-salida" data-placa="' + (a.placa || '') + '" data-id="' + a.id + '"><i class="fa-solid fa-arrow-right-from-bracket"></i> Salida</button></td></tr>');
             });
             vacio(tbD, 7, 'Nadie dentro en este momento');
 
             var tbH = $('#acc-hoy tbody').empty();
             $.each(d.hoy, function (i, a) {
-                tbH.append('<tr><td>' + a.id + '</td><td>' + a.tipo + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + hora(a.fecha_entrada) + '</td><td>' + hora(a.fecha_salida) + '</td><td><span class="estado-' + (a.estado === 'Dentro' ? 'activo' : 'inactivo') + '">' + a.estado + '</span></td></tr>');
+                tbH.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td>' + fechaHora(a.fecha_salida) + '</td><td><span class="estado-' + (a.estado === 'Dentro' ? 'activo' : 'inactivo') + '">' + a.estado + '</span></td></tr>');
             });
             vacio(tbH, 7, 'Sin accesos hoy');
         });
@@ -139,23 +176,25 @@ $(function () {
 
     $('#sec-accesos').on('click', '.btn-salida', function () {
         if (!confirm('¿Registrar salida?')) return;
-        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'registrar_salida', id: $(this).data('id')}, function (raw) {
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'registrar_salida', id: $(this).data('placa') || $(this).data('id')}, function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Salida registrada.', 'ok'); cargarAccesos(); }
             else alerta('Error al registrar.', 'err');
         });
     });
 
-    $('#a_tipo').on('change', function () { $('#campoPlaca').toggle($(this).val() === 'Vehículo'); });
-
-    $('#btnLimpiarAcceso').on('click', function () { $('#campoPlaca').hide(); });
+    $('#btnLimpiarAcceso').on('click', function () {
+        $('#campoPlaca').show();
+        $('#a_rol').val($('#a_rol option:first').val());
+    });
 
     $('#formAcceso').on('submit', function (e) {
         e.preventDefault();
-        if (!$('#a_nombre').val().trim()) { alerta('El nombre es requerido.', 'err'); return; }
+        if (!$('#a_rol').val() || !$('#a_nombre').val().trim()) { alerta('El rol y el nombre son requeridos.', 'err'); return; }
+        if (!$('input[name="placa"]').val().trim()) { alerta('La placa es requerida.', 'err'); return; }
         $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), $(this).serialize() + '&option=registrar_acceso', function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            if (d.response == '00') { alerta('Acceso registrado.', 'ok'); $('#formAcceso')[0].reset(); $('#campoPlaca').hide(); cargarAccesos(); }
+            if (d.response == '00') { alerta('Acceso registrado.', 'ok'); $('#formAcceso')[0].reset(); $('#campoPlaca').show(); $('#a_rol').val($('#a_rol option:first').val()); cargarAccesos(); }
             else alerta('Error al registrar.', 'err');
         });
     });
@@ -202,5 +241,7 @@ $(function () {
         });
     });
 
-    activar('inicio');
+    cargarRoles().always(function () {
+        activar('inicio');
+    });
 });

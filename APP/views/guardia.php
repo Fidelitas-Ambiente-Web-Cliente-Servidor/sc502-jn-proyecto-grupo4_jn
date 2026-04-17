@@ -53,7 +53,7 @@ $nombreGuardia = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Guardia', E
     <div class="contenedor-principal">
         <div class="bloque-tabla">
             <h3 class="subtitulo-bloque"><i class="fa-solid fa-person-walking-arrow-right"></i> Visitas activas</h3>
-            <table id="res-vis"><thead><tr><th>#</th><th>Nombre</th><th>Residencia</th><th>Motivo</th><th>Hora</th></tr></thead><tbody></tbody></table>
+            <table id="res-vis"><thead><tr><th>#</th><th>Nombre</th><th>Rol</th><th>Residencia</th><th>Motivo</th><th>Hora</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="bloque-tabla">
             <h3 class="subtitulo-bloque"><i class="fa-solid fa-box"></i> Paquetes pendientes</h3>
@@ -67,13 +67,15 @@ $nombreGuardia = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Guardia', E
     <div class="contenedor-principal">
         <div class="bloque-tabla">
             <h3 class="subtitulo-bloque">Visitas activas</h3>
-            <table id="vis-activas"><thead><tr><th>#</th><th>Nombre</th><th>Cédula</th><th>Residencia</th><th>Motivo</th><th>Entrada</th><th>Acción</th></tr></thead><tbody></tbody></table>
+            <table id="vis-activas"><thead><tr><th>#</th><th>Nombre</th><th>Rol</th><th>Cédula</th><th>Residencia</th><th>Motivo</th><th>Entrada</th><th>Acción</th></tr></thead><tbody></tbody></table>
             <h3 class="subtitulo-bloque" style="margin-top:22px">Historial del día</h3>
-            <table id="vis-hoy"><thead><tr><th>#</th><th>Nombre</th><th>Residencia</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
+            <table id="vis-hoy"><thead><tr><th>#</th><th>Nombre</th><th>Rol</th><th>Residencia</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="bloque-formulario">
             <h3><i class="fa-solid fa-plus"></i> Registrar visita</h3>
             <form id="formVisita">
+                <label>Rol *</label>
+                <select name="rol" id="v_rol" required></select>
                 <label>Nombre completo *</label>
                 <input type="text" id="v_nombre" name="nombre" placeholder="Nombre del visitante" required>
                 <label>Cédula / ID</label>
@@ -121,23 +123,20 @@ $nombreGuardia = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Guardia', E
     <div class="contenedor-principal">
         <div class="bloque-tabla">
             <h3 class="subtitulo-bloque">Actualmente dentro</h3>
-            <table id="acc-dentro"><thead><tr><th>#</th><th>Tipo</th><th>Nombre</th><th>Placa</th><th>Residencia</th><th>Entrada</th><th>Acción</th></tr></thead><tbody></tbody></table>
+            <table id="acc-dentro"><thead><tr><th>#</th><th>Rol</th><th>Nombre</th><th>Placa</th><th>Residencia</th><th>Entrada</th><th>Acción</th></tr></thead><tbody></tbody></table>
             <h3 class="subtitulo-bloque" style="margin-top:22px">Historial de hoy</h3>
-            <table id="acc-hoy"><thead><tr><th>#</th><th>Tipo</th><th>Nombre</th><th>Placa</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
+            <table id="acc-hoy"><thead><tr><th>#</th><th>Rol</th><th>Nombre</th><th>Placa</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="bloque-formulario">
             <h3><i class="fa-solid fa-plus"></i> Registrar acceso</h3>
             <form id="formAcceso">
-                <label>Tipo *</label>
-                <select id="a_tipo" name="tipo">
-                    <option value="Persona">Persona</option>
-                    <option value="Vehículo">Vehículo</option>
-                </select>
+                <label>Rol *</label>
+                <select id="a_rol" name="rol" required></select>
                 <label>Nombre / Conductor *</label>
                 <input type="text" id="a_nombre" name="nombre" placeholder="Nombre completo" required>
-                <div id="campoPlaca" style="display:none">
+                <div id="campoPlaca" style="display:block">
                     <label>Placa</label>
-                    <input type="text" name="placa" placeholder="Ej: ABC-123">
+                    <input type="text" name="placa" placeholder="Ej: ABC-123" required>
                 </div>
                 <label>Destino / Residencia</label>
                 <input type="text" name="residencia" placeholder="Ej: Casa 5">

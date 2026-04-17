@@ -25,7 +25,12 @@ class IndexController {
             $clave   = $_POST['clave']   ?? '';
             $perfil  = $_POST['perfil']  ?? '';
             $u = $this->model->login($usuario);
-            if ($u && password_verify($clave, $u['clave']) && $u['rol'] === $perfil) {
+            $claveOk = false;
+            if ($u) {
+                $claveOk = password_verify($clave, $u['clave']) || hash_equals((string)$u['clave'], (string)$clave);
+            }
+
+            if ($u && $claveOk && $u['rol'] === $perfil) {
                 $_SESSION['usuario'] = $u;
                 echo json_encode(['response' => '00', 'rol' => $u['rol']]);
             } else {

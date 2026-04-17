@@ -47,9 +47,17 @@ class GuardiaController {
 
     private function getMockData($type) {
         $mockData = [
+            'roles' => [
+                ['id' => 3, 'rol' => 'RESIDENTE'],
+                ['id' => 4, 'rol' => 'VISITA'],
+                ['id' => 5, 'rol' => 'TRABAJADOR'],
+                ['id' => 6, 'rol' => 'PROVEEDOR'],
+                ['id' => 7, 'rol' => 'TECNICO'],
+                ['id' => 8, 'rol' => 'JARDINERO'],
+            ],
             'visitas' => [
-                ['id' => 1, 'nombre' => 'Juan Pérez', 'cedula' => '12345678', 'residencia' => 'Casa 5', 'motivo' => 'Visita familiar', 'fecha_entrada' => '2026-04-17 08:30:00', 'fecha_salida' => null, 'estado' => 'Activa'],
-                ['id' => 2, 'nombre' => 'María García', 'cedula' => '87654321', 'residencia' => 'Apto 3B', 'motivo' => 'Negocios', 'fecha_entrada' => '2026-04-17 09:15:00', 'fecha_salida' => null, 'estado' => 'Activa'],
+                ['id' => 1, 'nombre' => 'Juan Pérez', 'rol' => 'Visita', 'cedula' => '12345678', 'residencia' => 'Casa 5', 'motivo' => 'Visita familiar', 'fecha_entrada' => '2026-04-17 08:30:00', 'fecha_salida' => null, 'estado' => 'Adentro'],
+                ['id' => 2, 'nombre' => 'María García', 'rol' => 'Proveedor', 'cedula' => '87654321', 'residencia' => 'Apto 3B', 'motivo' => 'Negocios', 'fecha_entrada' => '2026-04-17 09:15:00', 'fecha_salida' => null, 'estado' => 'Adentro'],
             ],
             'paquetes' => [
                 ['id' => 1, 'destinatario' => 'Carlos López', 'residencia' => 'Casa 8', 'empresa' => 'Amazon', 'descripcion' => 'Caja mediana', 'fecha_recepcion' => '2026-04-17 10:00:00', 'fecha_entrega' => null, 'estado' => 'Pendiente'],
@@ -78,6 +86,7 @@ class GuardiaController {
                 $paquetes = $this->getMockData('paquetes');
                 $accesos = $this->getMockData('accesos');
                 $turnos = $this->getMockData('turnos');
+                $roles = $this->getMockData('roles');
                 
                 switch ($option) {
                     case 'stats':
@@ -101,6 +110,16 @@ class GuardiaController {
                         break;
                     case 'get_turnos':
                         echo json_encode(['activo' => $turnos[0] ?? null, 'recientes' => $turnos]);
+                        break;
+                    case 'get_roles':
+                        echo json_encode([
+                            'roles_visita' => array_values(array_filter($roles, function ($r) {
+                                return isset($r['id']) && (int)$r['id'] >= 4 && (int)$r['id'] <= 8;
+                            })),
+                            'roles_acceso' => array_values(array_filter($roles, function ($r) {
+                                return isset($r['id']) && (int)$r['id'] >= 3 && (int)$r['id'] <= 8;
+                            })),
+                        ]);
                         break;
                 }
                 return;
@@ -127,6 +146,12 @@ class GuardiaController {
                     break;
                 case 'get_turnos':
                     echo json_encode(['activo' => $this->turno->getActivo($uid), 'recientes' => $this->turno->getRecientes()]);
+                    break;
+                case 'get_roles':
+                    echo json_encode([
+                        'roles_visita' => $this->db->query('SELECT ID_ROL AS id, ROL AS rol FROM FIDE_ROLES_TB WHERE ID_ROL BETWEEN 4 AND 8 ORDER BY ID_ROL ASC')->fetch_all(MYSQLI_ASSOC),
+                        'roles_acceso' => $this->db->query('SELECT ID_ROL AS id, ROL AS rol FROM FIDE_ROLES_TB WHERE ID_ROL BETWEEN 3 AND 8 ORDER BY ID_ROL ASC')->fetch_all(MYSQLI_ASSOC),
+                    ]);
                     break;
             }
         } catch (Exception $e) {

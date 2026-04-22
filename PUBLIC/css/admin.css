@@ -398,3 +398,20 @@ tbody tr:hover {
     margin-bottom: 20px;
     box-shadow: var(--sombra);
 }
+.columna-formularios {
+    flex: 1;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.tabla-acciones {
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .columna-formularios {
+        width: 100%;
+    }
+}

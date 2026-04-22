@@ -70,6 +70,8 @@ $nombreGuardia = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Guardia', E
             <table id="vis-activas"><thead><tr><th>#</th><th>Nombre</th><th>Rol</th><th>Cédula</th><th>Residencia</th><th>Motivo</th><th>Entrada</th><th>Acción</th></tr></thead><tbody></tbody></table>
             <h3 class="subtitulo-bloque" style="margin-top:22px">Historial del día</h3>
             <table id="vis-hoy"><thead><tr><th>#</th><th>Nombre</th><th>Rol</th><th>Residencia</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
+            <h3 class="subtitulo-bloque" style="margin-top:22px">Historial general</h3>
+            <table id="vis-hist"><thead><tr><th>#</th><th>Nombre</th><th>Rol</th><th>Residencia</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="bloque-formulario">
             <h3><i class="fa-solid fa-plus"></i> Registrar visita</h3>
@@ -99,6 +101,8 @@ $nombreGuardia = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Guardia', E
             <table id="paq-pendientes"><thead><tr><th>#</th><th>Destinatario</th><th>Residencia</th><th>Empresa</th><th>Descripción</th><th>Recibido</th><th>Acción</th></tr></thead><tbody></tbody></table>
             <h3 class="subtitulo-bloque" style="margin-top:22px">Paquetes de hoy</h3>
             <table id="paq-hoy"><thead><tr><th>#</th><th>Destinatario</th><th>Residencia</th><th>Recibido</th><th>Entregado</th><th>Estado</th></tr></thead><tbody></tbody></table>
+            <h3 class="subtitulo-bloque" style="margin-top:22px">Historial general</h3>
+            <table id="paq-hist"><thead><tr><th>#</th><th>Destinatario</th><th>Residencia</th><th>Recibido</th><th>Entregado</th><th>Estado</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="bloque-formulario">
             <h3><i class="fa-solid fa-plus"></i> Registrar paquete</h3>
@@ -126,6 +130,8 @@ $nombreGuardia = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Guardia', E
             <table id="acc-dentro"><thead><tr><th>#</th><th>Rol</th><th>Nombre</th><th>Placa</th><th>Residencia</th><th>Entrada</th><th>Acción</th></tr></thead><tbody></tbody></table>
             <h3 class="subtitulo-bloque" style="margin-top:22px">Historial de hoy</h3>
             <table id="acc-hoy"><thead><tr><th>#</th><th>Rol</th><th>Nombre</th><th>Placa</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
+            <h3 class="subtitulo-bloque" style="margin-top:22px">Historial general</h3>
+            <table id="acc-hist"><thead><tr><th>#</th><th>Rol</th><th>Nombre</th><th>Placa</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="bloque-formulario">
             <h3><i class="fa-solid fa-plus"></i> Registrar acceso</h3>

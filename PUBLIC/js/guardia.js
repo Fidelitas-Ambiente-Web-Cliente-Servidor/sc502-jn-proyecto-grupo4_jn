@@ -99,6 +99,13 @@ $(function () {
                 tbH.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td>' + fechaHora(v.fecha_salida) + '</td><td><span class="estado-' + (esActivoVisita ? 'activo' : 'inactivo') + '">' + v.estado + '</span></td></tr>');
             });
             vacio(tbH, 7, 'Sin registros hoy');
+
+            var tbHist = $('#vis-hist tbody').empty();
+            $.each(d.historial || [], function (i, v) {
+                var esActivoHistVisita = String(v.estado || '').toLowerCase() === 'adentro';
+                tbHist.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td>' + fechaHora(v.fecha_salida) + '</td><td><span class="estado-' + (esActivoHistVisita ? 'activo' : 'inactivo') + '">' + v.estado + '</span></td></tr>');
+            });
+            vacio(tbHist, 7, 'Sin historial registrado');
         });
     }
 
@@ -135,6 +142,12 @@ $(function () {
                 tbH.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td>' + fechaHora(p.fecha_entrega) + '</td><td><span class="estado-' + (p.estado === 'Pendiente' ? 'pendiente' : 'activo') + '">' + p.estado + '</span></td></tr>');
             });
             vacio(tbH, 6, 'Sin paquetes hoy');
+
+            var tbHist = $('#paq-hist tbody').empty();
+            $.each(d.historial || [], function (i, p) {
+                tbHist.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td>' + fechaHora(p.fecha_entrega) + '</td><td><span class="estado-' + (p.estado === 'Pendiente' ? 'pendiente' : 'activo') + '">' + p.estado + '</span></td></tr>');
+            });
+            vacio(tbHist, 6, 'Sin historial registrado');
         });
     }
 
@@ -171,12 +184,18 @@ $(function () {
                 tbH.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td>' + fechaHora(a.fecha_salida) + '</td><td><span class="estado-' + (a.estado === 'Dentro' ? 'activo' : 'inactivo') + '">' + a.estado + '</span></td></tr>');
             });
             vacio(tbH, 7, 'Sin accesos hoy');
+
+            var tbHist = $('#acc-hist tbody').empty();
+            $.each(d.historial || [], function (i, a) {
+                tbHist.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td>' + fechaHora(a.fecha_salida) + '</td><td><span class="estado-' + (a.estado === 'Dentro' ? 'activo' : 'inactivo') + '">' + a.estado + '</span></td></tr>');
+            });
+            vacio(tbHist, 7, 'Sin historial registrado');
         });
     }
 
     $('#sec-accesos').on('click', '.btn-salida', function () {
         if (!confirm('¿Registrar salida?')) return;
-        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'registrar_salida', id: $(this).data('placa') || $(this).data('id')}, function (raw) {
+        $.post(url + '?test=' + (testParam.includes('test=1') ? '1' : '0'), {option: 'registrar_salida', id: $(this).data('id')}, function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (d.response == '00') { alerta('Salida registrada.', 'ok'); cargarAccesos(); }
             else alerta('Error al registrar.', 'err');

@@ -1,9 +1,39 @@
 <?php
 class Paquete {
     private $conn;
+    private $hasCamposExtrasPaquete = null;
 
     public function __construct($db) {
         $this->conn = $db;
+    }
+
+    private function ensureCamposExtrasPaquete() {
+        if ($this->hasCamposExtrasPaquete !== null) {
+            return $this->hasCamposExtrasPaquete;
+        }
+
+        $hasEmpresa = (bool)$this->conn->query("SHOW COLUMNS FROM FIDE_PAQUETES_TB LIKE 'EMPRESA'")->fetch_assoc();
+        $hasDescripcion = (bool)$this->conn->query("SHOW COLUMNS FROM FIDE_PAQUETES_TB LIKE 'DESCRIPCION'")->fetch_assoc();
+
+        if (!$hasEmpresa) {
+            $this->conn->query('ALTER TABLE FIDE_PAQUETES_TB ADD COLUMN EMPRESA VARCHAR(120) NULL');
+        }
+        if (!$hasDescripcion) {
+            $this->conn->query('ALTER TABLE FIDE_PAQUETES_TB ADD COLUMN DESCRIPCION VARCHAR(255) NULL');
+        }
+
+        $hasEmpresa = (bool)$this->conn->query("SHOW COLUMNS FROM FIDE_PAQUETES_TB LIKE 'EMPRESA'")->fetch_assoc();
+        $hasDescripcion = (bool)$this->conn->query("SHOW COLUMNS FROM FIDE_PAQUETES_TB LIKE 'DESCRIPCION'")->fetch_assoc();
+        $this->hasCamposExtrasPaquete = ($hasEmpresa && $hasDescripcion);
+        return $this->hasCamposExtrasPaquete;
+    }
+
+    private function ahoraCR() {
+        return (new DateTime('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+    }
+
+    private function fechaHoyCR() {
+        return (new DateTime('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
     }
 
     private function nextId($tabla, $columna) {
@@ -142,13 +172,14 @@ class Paquete {
         $am = $partes[2] ?? 'Sistema';
         $idRol = $this->getRolId('residente');
         $idEstado = $this->getEstadoId(['Activo', 'Pendiente']);
+           $fechaRegistro = $this->ahoraCR();
 
         $ins = $this->conn->prepare(
             'INSERT INTO FIDE_PERSONAS_TB
              (ID_PERSONA, NOMBRE_EMPLEADO, APELLIDO_PATERNO, APELLIDO_MATERNO, FECHA_REGISTRO, ID_ROL, ID_ESTADO)
-             VALUES (?, ?, ?, ?, NOW(), ?, ?)'
+               VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $ins->bind_param('isssii', $idPersona, $n, $ap, $am, $idRol, $idEstado);
+           $ins->bind_param('issssii', $idPersona, $n, $ap, $am, $fechaRegistro, $idRol, $idEstado);
         $ins->execute();
 
         return $idPersona;
@@ -159,28 +190,56 @@ class Paquete {
         $idPersona = $this->getOrCreatePersona($destinatario);
         $idResidencia = $this->ensureResidencia($d['residencia'] ?? '1');
         $idEstado = 3;
+        $fechaIngreso = $this->ahoraCR();
+        $empresa = trim((string)($d['empresa'] ?? ''));
+        $descripcion = trim((string)($d['descripcion'] ?? ''));
+
+        if ($this->ensureCamposExtrasPaquete()) {
+            $stmt = $this->conn->prepare(
+                'INSERT INTO FIDE_PAQUETES_TB
+                 (ID_PERSONA, ID_RESIDENCIA, FECHA_INGRESO, FECHA_SALIDA, ID_ESTADO, EMPRESA, DESCRIPCION)
+                 VALUES (?, ?, ?, NULL, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE
+                    FECHA_INGRESO = VALUES(FECHA_INGRESO),
+                    FECHA_SALIDA = NULL,
+                    ID_ESTADO = VALUES(ID_ESTADO),
+                    EMPRESA = VALUES(EMPRESA),
+                    DESCRIPCION = VALUES(DESCRIPCION)'
+            );
+            $stmt->bind_param('iisiss', $idPersona, $idResidencia, $fechaIngreso, $idEstado, $empresa, $descripcion);
+            return $stmt->execute();
+        }
 
         $stmt = $this->conn->prepare(
             'INSERT INTO FIDE_PAQUETES_TB
              (ID_PERSONA, ID_RESIDENCIA, FECHA_INGRESO, FECHA_SALIDA, ID_ESTADO)
-             VALUES (?, ?, NOW(), NULL, ?)
+             VALUES (?, ?, ?, NULL, ?)
              ON DUPLICATE KEY UPDATE
-                FECHA_INGRESO = NOW(),
+                FECHA_INGRESO = VALUES(FECHA_INGRESO),
                 FECHA_SALIDA = NULL,
                 ID_ESTADO = VALUES(ID_ESTADO)'
         );
-        $stmt->bind_param('iii', $idPersona, $idResidencia, $idEstado);
+        $stmt->bind_param('iisi', $idPersona, $idResidencia, $fechaIngreso, $idEstado);
         return $stmt->execute();
     }
 
     public function entregar($id) {
         $idEstado = 11;
-        $stmt = $this->conn->prepare('UPDATE FIDE_PAQUETES_TB SET FECHA_SALIDA=NOW(), ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL');
-        $stmt->bind_param('ii', $idEstado, $id);
-        return $stmt->execute();
+        $fechaSalida = $this->ahoraCR();
+        $stmt = $this->conn->prepare('UPDATE FIDE_PAQUETES_TB SET FECHA_SALIDA=?, ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL AND ID_ESTADO=3');
+        $stmt->bind_param('sii', $fechaSalida, $idEstado, $id);
+        $ok = $stmt->execute();
+        return $ok && $stmt->affected_rows > 0;
     }
 
     public function getPendientes() {
+        $empresaExpr = $this->ensureCamposExtrasPaquete()
+            ? 'COALESCE(NULLIF(TRIM(p.EMPRESA), ""), "—")'
+            : '"—"';
+        $descripcionExpr = $this->ensureCamposExtrasPaquete()
+            ? 'COALESCE(NULLIF(TRIM(p.DESCRIPCION), ""), "—")'
+            : '"—"';
+
         $sql =
             'SELECT
                 p.ID_PERSONA AS id,
@@ -192,19 +251,28 @@ class Paquete {
                     COALESCE(per.APELLIDO_MATERNO, "")
                 )) AS destinatario,
                 CONCAT("Residencia ", p.ID_RESIDENCIA) AS residencia,
-                NULL AS descripcion,
-                NULL AS empresa,
+                 ' . $empresaExpr . ' AS empresa,
+                 ' . $descripcionExpr . ' AS descripcion,
                 DATE_FORMAT(p.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_recepcion,
                 DATE_FORMAT(p.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_entrega,
                      CASE WHEN p.ID_ESTADO = 3 THEN "Pendiente" ELSE "Entregado" END AS estado
              FROM FIDE_PAQUETES_TB p
              INNER JOIN FIDE_PERSONAS_TB per ON per.ID_PERSONA = p.ID_PERSONA
-                 WHERE p.ID_ESTADO = 3
+                                 WHERE p.ID_ESTADO = 3
+                             AND p.FECHA_SALIDA IS NULL
              ORDER BY p.FECHA_INGRESO DESC';
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
 
     public function getHoy() {
+        $fechaHoy = $this->fechaHoyCR();
+        $empresaExpr = $this->ensureCamposExtrasPaquete()
+            ? 'COALESCE(NULLIF(TRIM(p.EMPRESA), ""), "—")'
+            : '"—"';
+        $descripcionExpr = $this->ensureCamposExtrasPaquete()
+            ? 'COALESCE(NULLIF(TRIM(p.DESCRIPCION), ""), "—")'
+            : '"—"';
+
         $sql =
             'SELECT
                 p.ID_PERSONA AS id,
@@ -216,18 +284,51 @@ class Paquete {
                     COALESCE(per.APELLIDO_MATERNO, "")
                 )) AS destinatario,
                 CONCAT("Residencia ", p.ID_RESIDENCIA) AS residencia,
-                NULL AS descripcion,
-                NULL AS empresa,
+                ' . $empresaExpr . ' AS empresa,
+                ' . $descripcionExpr . ' AS descripcion,
                 DATE_FORMAT(p.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_recepcion,
                 DATE_FORMAT(p.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_entrega,
                 CASE WHEN p.ID_ESTADO = 3 THEN "Pendiente" ELSE "Entregado" END AS estado
              FROM FIDE_PAQUETES_TB p
              INNER JOIN FIDE_PERSONAS_TB per ON per.ID_PERSONA = p.ID_PERSONA
-             WHERE DATE(p.FECHA_INGRESO) = CURDATE()
+                         WHERE DATE(p.FECHA_INGRESO) = ?
                AND p.ID_ESTADO IN (3, 11)
              ORDER BY p.FECHA_INGRESO DESC';
-        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param('s', $fechaHoy);
+                $stmt->execute();
+                return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
+
+            public function getHistorial() {
+                $empresaExpr = $this->ensureCamposExtrasPaquete()
+                    ? 'COALESCE(NULLIF(TRIM(p.EMPRESA), ""), "—")'
+                    : '"—"';
+                $descripcionExpr = $this->ensureCamposExtrasPaquete()
+                    ? 'COALESCE(NULLIF(TRIM(p.DESCRIPCION), ""), "—")'
+                    : '"—"';
+
+                $sql =
+                    'SELECT
+                        p.ID_PERSONA AS id,
+                        TRIM(CONCAT(
+                            COALESCE(per.NOMBRE_EMPLEADO, ""),
+                            " ",
+                            COALESCE(per.APELLIDO_PATERNO, ""),
+                            " ",
+                            COALESCE(per.APELLIDO_MATERNO, "")
+                        )) AS destinatario,
+                        CONCAT("Residencia ", p.ID_RESIDENCIA) AS residencia,
+                        ' . $empresaExpr . ' AS empresa,
+                        ' . $descripcionExpr . ' AS descripcion,
+                        DATE_FORMAT(p.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_recepcion,
+                        DATE_FORMAT(p.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_entrega,
+                        CASE WHEN p.FECHA_SALIDA IS NULL THEN "Pendiente" ELSE "Entregado" END AS estado
+                     FROM FIDE_PAQUETES_TB p
+                     INNER JOIN FIDE_PERSONAS_TB per ON per.ID_PERSONA = p.ID_PERSONA
+                     ORDER BY p.FECHA_INGRESO DESC';
+                return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+            }
 
     public function countPendientes() {
         return (int)$this->conn->query('SELECT COUNT(*) c FROM FIDE_PAQUETES_TB WHERE ID_ESTADO = 3')->fetch_assoc()['c'];

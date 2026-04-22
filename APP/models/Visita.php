@@ -8,6 +8,14 @@ class Visita {
         $this->conn = $db;
     }
 
+    private function ahoraCR() {
+        return (new DateTime('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+    }
+
+    private function fechaHoyCR() {
+        return (new DateTime('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+    }
+
     private function nextId($tabla, $columna) {
         $sql = "SELECT COALESCE(MAX($columna), 0) + 1 AS next_id FROM $tabla";
         $row = $this->conn->query($sql)->fetch_assoc();
@@ -81,13 +89,14 @@ class Visita {
     private function crearPersonaVisita($idPersona, $nombreCompleto, $motivo, $idRol, $idEstado) {
         list($nombre, $apellidoPaterno) = $this->descomponerNombre($nombreCompleto);
         $apellidoMaterno = trim((string)$motivo);
+        $fechaRegistro = $this->ahoraCR();
 
         $stmt = $this->conn->prepare(
             'INSERT INTO FIDE_PERSONAS_TB
              (ID_PERSONA, NOMBRE_EMPLEADO, APELLIDO_PATERNO, APELLIDO_MATERNO, FECHA_REGISTRO, ID_ROL, ID_ESTADO)
-             VALUES (?, ?, ?, ?, NOW(), ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->bind_param('isssii', $idPersona, $nombre, $apellidoPaterno, $apellidoMaterno, $idRol, $idEstado);
+        $stmt->bind_param('issssii', $idPersona, $nombre, $apellidoPaterno, $apellidoMaterno, $fechaRegistro, $idRol, $idEstado);
         $stmt->execute();
     }
 
@@ -209,31 +218,34 @@ class Visita {
         $idResidencia = $this->ensureResidencia($d['residencia'] ?? '1');
         $idRol = $this->getRolVisitaId($rol);
         $idEstado = $this->getEstadoId(['ADENTRO', 'ACTIVO']);
+        $fechaIngreso = $this->ahoraCR();
 
         $stmt = $this->conn->prepare(
             'INSERT INTO FIDE_VISITAS_TB
              (ID_PERSONA, FECHA_INGRESO, FECHA_SALIDA, ID_RESIDENCIA, ID_ROL, ID_ESTADO)
-             VALUES (?, NOW(), NULL, ?, ?, ?)
+             VALUES (?, ?, NULL, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
-                FECHA_INGRESO = NOW(),
+                FECHA_INGRESO = VALUES(FECHA_INGRESO),
                 FECHA_SALIDA = NULL,
                 ID_RESIDENCIA = VALUES(ID_RESIDENCIA),
                 ID_ROL = VALUES(ID_ROL),
                 ID_ESTADO = VALUES(ID_ESTADO)'
         );
-        $stmt->bind_param('iiii', $idPersona, $idResidencia, $idRol, $idEstado);
+        $stmt->bind_param('isiii', $idPersona, $fechaIngreso, $idResidencia, $idRol, $idEstado);
         return $stmt->execute();
     }
 
     public function checkout($id) {
         $idEstadoFinal = $this->getEstadoId(['AFUERA', 'SALIO']);
-        $stmt = $this->conn->prepare('UPDATE FIDE_VISITAS_TB SET FECHA_SALIDA=NOW(), ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL');
-        $stmt->bind_param('ii', $idEstadoFinal, $id);
-        return $stmt->execute();
+        $fechaSalida = $this->ahoraCR();
+        $stmt = $this->conn->prepare('UPDATE FIDE_VISITAS_TB SET FECHA_SALIDA=?, ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL');
+        $stmt->bind_param('sii', $fechaSalida, $idEstadoFinal, $id);
+        $ok = $stmt->execute();
+        return $ok && $stmt->affected_rows > 0;
     }
 
     private function queryVisitas($soloHoy = false) {
-        $filtroFecha = $soloHoy ? 'AND DATE(v.FECHA_INGRESO)=CURDATE() AND v.FECHA_SALIDA IS NOT NULL' : '';
+        $filtroFecha = $soloHoy ? 'AND (DATE(v.FECHA_INGRESO)=? OR DATE(v.FECHA_SALIDA)=?)' : '';
         $sql =
             'SELECT
                 v.ID_PERSONA AS id,
@@ -245,7 +257,7 @@ class Visita {
                 r.ROL AS rol,
                 v.ID_PERSONA AS cedula,
                 CONCAT("Residencia ", v.ID_RESIDENCIA) AS residencia,
-                     r.ROL AS motivo,
+                 COALESCE(NULLIF(TRIM(p.APELLIDO_MATERNO), ""), "—") AS motivo,
                 DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
                 DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
                 CASE WHEN v.FECHA_SALIDA IS NULL THEN "Adentro" ELSE "Afuera" END AS estado
@@ -254,7 +266,16 @@ class Visita {
              INNER JOIN FIDE_ROLES_TB r ON r.ID_ROL = v.ID_ROL
                  WHERE r.ID_ROL BETWEEN ' . (int)$this->rolVisitaMin . ' AND ' . (int)$this->rolVisitaMax . ' ' . $filtroFecha . '
              ORDER BY v.FECHA_INGRESO DESC';
-        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+
+        if (!$soloHoy) {
+            return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+        }
+
+        $fechaHoy = $this->fechaHoyCR();
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('ss', $fechaHoy, $fechaHoy);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
     public function getActivas() {
@@ -269,7 +290,7 @@ class Visita {
                 r.ROL AS rol,
                 v.ID_PERSONA AS cedula,
                 CONCAT("Residencia ", v.ID_RESIDENCIA) AS residencia,
-                     r.ROL AS motivo,
+                 COALESCE(NULLIF(TRIM(p.APELLIDO_MATERNO), ""), "—") AS motivo,
                 DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
                 DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
                 "Adentro" AS estado
@@ -284,6 +305,29 @@ class Visita {
 
     public function getHoy() {
         return $this->queryVisitas(true);
+    }
+
+    public function getHistorial() {
+        $sql =
+            'SELECT
+                v.ID_PERSONA AS id,
+                TRIM(CONCAT(
+                    COALESCE(p.NOMBRE_EMPLEADO, ""),
+                    " ",
+                    COALESCE(p.APELLIDO_PATERNO, "")
+                )) AS nombre,
+                r.ROL AS rol,
+                v.ID_PERSONA AS cedula,
+                CONCAT("Residencia ", v.ID_RESIDENCIA) AS residencia,
+                 COALESCE(NULLIF(TRIM(p.APELLIDO_MATERNO), ""), "—") AS motivo,
+                DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
+                DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
+                CASE WHEN v.FECHA_SALIDA IS NULL THEN "Adentro" ELSE "Afuera" END AS estado
+             FROM FIDE_VISITAS_TB v
+             INNER JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = v.ID_PERSONA
+             INNER JOIN FIDE_ROLES_TB r ON r.ID_ROL = v.ID_ROL
+             ORDER BY v.FECHA_INGRESO DESC';
+        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
 
     public function countActivas() {

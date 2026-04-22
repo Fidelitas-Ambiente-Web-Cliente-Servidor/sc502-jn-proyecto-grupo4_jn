@@ -100,13 +100,13 @@ class GuardiaController {
                         ]);
                         break;
                     case 'get_visitas':
-                        echo json_encode(['activas' => $visitas, 'hoy' => $visitas]);
+                        echo json_encode(['activas' => $visitas, 'hoy' => $visitas, 'historial' => $visitas]);
                         break;
                     case 'get_paquetes':
-                        echo json_encode(['pendientes' => $paquetes, 'hoy' => $paquetes]);
+                        echo json_encode(['pendientes' => $paquetes, 'hoy' => $paquetes, 'historial' => $paquetes]);
                         break;
                     case 'get_accesos':
-                        echo json_encode(['dentro' => $accesos, 'hoy' => $accesos]);
+                        echo json_encode(['dentro' => $accesos, 'hoy' => $accesos, 'historial' => $accesos]);
                         break;
                     case 'get_turnos':
                         echo json_encode(['activo' => $turnos[0] ?? null, 'recientes' => $turnos]);
@@ -136,13 +136,25 @@ class GuardiaController {
                     ]);
                     break;
                 case 'get_visitas':
-                    echo json_encode(['activas' => $this->visita->getActivas(), 'hoy' => $this->visita->getHoy()]);
+                    echo json_encode([
+                        'activas' => $this->visita->getActivas(),
+                        'hoy' => $this->visita->getHoy(),
+                        'historial' => $this->visita->getHistorial()
+                    ]);
                     break;
                 case 'get_paquetes':
-                    echo json_encode(['pendientes' => $this->paquete->getPendientes(), 'hoy' => $this->paquete->getHoy()]);
+                    echo json_encode([
+                        'pendientes' => $this->paquete->getPendientes(),
+                        'hoy' => $this->paquete->getHoy(),
+                        'historial' => $this->paquete->getHistorial()
+                    ]);
                     break;
                 case 'get_accesos':
-                    echo json_encode(['dentro' => $this->acceso->getDentro(), 'hoy' => $this->acceso->getHoy()]);
+                    echo json_encode([
+                        'dentro' => $this->acceso->getDentro(),
+                        'hoy' => $this->acceso->getHoy(),
+                        'historial' => $this->acceso->getHistorial()
+                    ]);
                     break;
                 case 'get_turnos':
                     echo json_encode(['activo' => $this->turno->getActivo($uid), 'recientes' => $this->turno->getRecientes()]);
@@ -167,20 +179,40 @@ class GuardiaController {
                 return;
             }
             $this->connectIfNeeded();
+            $ok = true;
             switch ($option) {
-                case 'registrar_visita':   $this->visita->registrar($_POST, $uid); break;
-                case 'checkout_visita':    $this->visita->checkout((int)$_POST['id']); break;
-                case 'registrar_paquete':  $this->paquete->registrar($_POST, $uid); break;
-                case 'entregar_paquete':   $this->paquete->entregar((int)$_POST['id']); break;
-                case 'registrar_acceso':   $this->acceso->registrar($_POST, $uid); break;
-                case 'registrar_salida':   $this->acceso->registrarSalida((int)$_POST['id']); break;
+                case 'registrar_visita':
+                    $ok = (bool)$this->visita->registrar($_POST, $uid);
+                    break;
+                case 'checkout_visita':
+                    $ok = (bool)$this->visita->checkout((int)$_POST['id']);
+                    break;
+                case 'registrar_paquete':
+                    $ok = (bool)$this->paquete->registrar($_POST, $uid);
+                    break;
+                case 'entregar_paquete':
+                    $ok = (bool)$this->paquete->entregar((int)$_POST['id']);
+                    break;
+                case 'registrar_acceso':
+                    $ok = (bool)$this->acceso->registrar($_POST, $uid);
+                    break;
+                case 'registrar_salida':
+                    $identificador = $_POST['id'] ?? '';
+                    $ok = (bool)$this->acceso->registrarSalida($identificador);
+                    break;
                 case 'iniciar_turno':
                     $nombre = trim($_POST['guardia_nombre'] ?? '') ?: ($_SESSION['usuario']['nombre'] ?? 'Guardia');
-                    $this->turno->iniciar($nombre, $uid, $_POST['notas'] ?? '');
+                    $ok = (bool)$this->turno->iniciar($nombre, $uid, $_POST['notas'] ?? '');
                     break;
-                case 'finalizar_turno':    $this->turno->finalizar((int)$_POST['id']); break;
+                case 'finalizar_turno':
+                    $ok = (bool)$this->turno->finalizar((int)$_POST['id']);
+                    break;
             }
-            echo json_encode(['response' => '00']);
+            if ($ok) {
+                echo json_encode(['response' => '00']);
+            } else {
+                echo json_encode(['response' => '01', 'message' => 'No se pudo completar la acción.']);
+            }
         } catch (Exception $e) {
             echo json_encode(['response' => '01', 'message' => 'Error de conexión.']);
         }

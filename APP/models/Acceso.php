@@ -6,6 +6,10 @@ class Acceso {
         $this->conn = $db;
     }
 
+    private function ahoraCR() {
+        return (new DateTime('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+    }
+
     private function nextId($tabla, $columna) {
         $sql = "SELECT COALESCE(MAX($columna), 0) + 1 AS next_id FROM $tabla";
         $row = $this->conn->query($sql)->fetch_assoc();
@@ -127,12 +131,13 @@ class Acceso {
         $idRol = $this->getRolId($rol);
         $idEstado = $this->getEstadoId(['ADENTRO', 'ACTIVO']);
 
-        $stmt = $this->conn->prepare(
+           $fechaRegistro = $this->ahoraCR();
+           $stmt = $this->conn->prepare(
             'INSERT INTO FIDE_PERSONAS_TB
              (ID_PERSONA, NOMBRE_EMPLEADO, APELLIDO_PATERNO, APELLIDO_MATERNO, FECHA_REGISTRO, ID_ROL, ID_ESTADO)
-             VALUES (?, ?, ?, ?, NOW(), ?, ?)'
+               VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->bind_param('isssii', $idPersona, $n, $ap, $am, $idRol, $idEstado);
+           $stmt->bind_param('issssii', $idPersona, $n, $ap, $am, $fechaRegistro, $idRol, $idEstado);
         $stmt->execute();
         return $idPersona;
     }
@@ -177,19 +182,20 @@ class Acceso {
         $idResidencia = $this->ensureResidencia($d['residencia'] ?? '1');
         $idEstado = $this->getEstadoId(['ADENTRO', 'ACTIVO']);
         $idRol = $this->getRolId($rol);
+        $fechaIngreso = $this->ahoraCR();
 
         $visita = $this->conn->prepare(
             'INSERT INTO FIDE_VISITAS_TB
              (ID_PERSONA, FECHA_INGRESO, FECHA_SALIDA, ID_RESIDENCIA, ID_ROL, ID_ESTADO)
-             VALUES (?, NOW(), NULL, ?, ?, ?)
+             VALUES (?, ?, NULL, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
-                FECHA_INGRESO = NOW(),
+            FECHA_INGRESO = VALUES(FECHA_INGRESO),
                 FECHA_SALIDA = NULL,
                 ID_RESIDENCIA = VALUES(ID_RESIDENCIA),
                 ID_ROL = VALUES(ID_ROL),
                 ID_ESTADO = VALUES(ID_ESTADO)'
         );
-        $visita->bind_param('iiii', $idPersona, $idResidencia, $idRol, $idEstado);
+        $visita->bind_param('isiii', $idPersona, $fechaIngreso, $idResidencia, $idRol, $idEstado);
         $ok = $visita->execute();
 
         if ($ok) {
@@ -213,16 +219,19 @@ class Acceso {
     public function registrarSalida($idOrPlaca) {
         $idEstadoSalidaVehiculo = $this->getEstadoId(['SALIO', 'AFUERA']);
         $idEstadoSalidaVisita = $this->getEstadoId(['SALIO', 'AFUERA']);
+        $fechaSalida = $this->ahoraCR();
 
         $okVeh = false;
+        $rowsVehActualizadas = 0;
         if (ctype_digit((string)$idOrPlaca)) {
             $idPersona = (int)$idOrPlaca;
             $v = $this->conn->prepare('UPDATE FIDE_VEHICULOS_TB SET ID_ESTADO=? WHERE ID_PERSONA=?');
             $v->bind_param('ii', $idEstadoSalidaVehiculo, $idPersona);
             $okVeh = $v->execute();
+            $rowsVehActualizadas = $v->affected_rows;
 
-            $vis = $this->conn->prepare('UPDATE FIDE_VISITAS_TB SET FECHA_SALIDA=NOW(), ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL');
-            $vis->bind_param('ii', $idEstadoSalidaVisita, $idPersona);
+            $vis = $this->conn->prepare('UPDATE FIDE_VISITAS_TB SET FECHA_SALIDA=?, ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL');
+            $vis->bind_param('sii', $fechaSalida, $idEstadoSalidaVisita, $idPersona);
             $vis->execute();
         } else {
             $placa = trim((string)$idOrPlaca);
@@ -235,14 +244,15 @@ class Acceso {
                 $v = $this->conn->prepare('UPDATE FIDE_VEHICULOS_TB SET ID_ESTADO=? WHERE PLACA=?');
                 $v->bind_param('is', $idEstadoSalidaVehiculo, $placa);
                 $okVeh = $v->execute();
+                $rowsVehActualizadas = $v->affected_rows;
 
-                $vis = $this->conn->prepare('UPDATE FIDE_VISITAS_TB SET FECHA_SALIDA=NOW(), ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL');
-                $vis->bind_param('ii', $idEstadoSalidaVisita, $idPersona);
+                $vis = $this->conn->prepare('UPDATE FIDE_VISITAS_TB SET FECHA_SALIDA=?, ID_ESTADO=? WHERE ID_PERSONA=? AND FECHA_SALIDA IS NULL');
+                $vis->bind_param('sii', $fechaSalida, $idEstadoSalidaVisita, $idPersona);
                 $vis->execute();
             }
         }
 
-        return $okVeh;
+        return $okVeh && $rowsVehActualizadas > 0;
     }
 
     public function getDentro() {
@@ -260,11 +270,11 @@ class Acceso {
                 veh.PLACA AS placa,
                 CONCAT("Residencia ", COALESCE(v.ID_RESIDENCIA, "—")) AS residencia,
                 DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
-                DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
+                     NULL AS fecha_salida,
                 "Dentro" AS estado
              FROM FIDE_VEHICULOS_TB veh
              INNER JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = veh.ID_PERSONA
-             LEFT JOIN FIDE_VISITAS_TB v ON v.ID_PERSONA = veh.ID_PERSONA
+                 LEFT JOIN FIDE_VISITAS_TB v ON v.ID_PERSONA = veh.ID_PERSONA AND v.FECHA_SALIDA IS NULL
                  LEFT JOIN FIDE_ROLES_TB r ON r.ID_ROL = p.ID_ROL
              INNER JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = veh.ID_ESTADO
              WHERE LOWER(e.NOMBRE_ESTADO) = "adentro"
@@ -273,6 +283,7 @@ class Acceso {
     }
 
     public function getHoy() {
+        $fechaHoy = (new DateTime('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
         $sql =
             'SELECT
                 veh.ID_PERSONA AS id,
@@ -288,16 +299,75 @@ class Acceso {
                 CONCAT("Residencia ", COALESCE(v.ID_RESIDENCIA, "—")) AS residencia,
                 DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
                 DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
-                CASE WHEN LOWER(e.NOMBRE_ESTADO) = "adentro" THEN "Dentro" ELSE "Salió" END AS estado
+                CASE
+                    WHEN v.FECHA_SALIDA IS NOT NULL THEN "Salió"
+                    WHEN LOWER(e.NOMBRE_ESTADO) = "adentro" THEN "Dentro"
+                    ELSE "Salió"
+                END AS estado
              FROM FIDE_VEHICULOS_TB veh
              INNER JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = veh.ID_PERSONA
-             LEFT JOIN FIDE_VISITAS_TB v ON v.ID_PERSONA = veh.ID_PERSONA
+             LEFT JOIN (
+                SELECT v1.*
+                FROM FIDE_VISITAS_TB v1
+                INNER JOIN (
+                    SELECT ID_PERSONA, MAX(FECHA_INGRESO) AS MAX_FECHA_INGRESO
+                    FROM FIDE_VISITAS_TB
+                    GROUP BY ID_PERSONA
+                ) v2 ON v2.ID_PERSONA = v1.ID_PERSONA
+                    AND v2.MAX_FECHA_INGRESO = v1.FECHA_INGRESO
+             ) v ON v.ID_PERSONA = veh.ID_PERSONA
                  LEFT JOIN FIDE_ROLES_TB r ON r.ID_ROL = p.ID_ROL
              INNER JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = veh.ID_ESTADO
              WHERE LOWER(e.NOMBRE_ESTADO) IN ("adentro", "afuera", "salio")
+               AND (
+                                        DATE(v.FECHA_INGRESO) = ?
+                                        OR DATE(v.FECHA_SALIDA) = ?
+               )
              ORDER BY veh.PLACA ASC';
-        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param('ss', $fechaHoy, $fechaHoy);
+                $stmt->execute();
+                return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
+
+            public function getHistorial() {
+                $sql =
+                    'SELECT
+                        veh.ID_PERSONA AS id,
+                             r.ROL AS tipo,
+                        TRIM(CONCAT(
+                            COALESCE(p.NOMBRE_EMPLEADO, ""),
+                            " ",
+                            COALESCE(p.APELLIDO_PATERNO, ""),
+                            " ",
+                            COALESCE(p.APELLIDO_MATERNO, "")
+                        )) AS nombre,
+                        veh.PLACA AS placa,
+                        CONCAT("Residencia ", COALESCE(v.ID_RESIDENCIA, "—")) AS residencia,
+                        DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
+                        DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
+                        CASE
+                            WHEN v.FECHA_SALIDA IS NOT NULL THEN "Salió"
+                            WHEN LOWER(COALESCE(e.NOMBRE_ESTADO, "")) IN ("afuera", "salio", "salió") THEN "Salió"
+                            ELSE "Dentro"
+                        END AS estado
+                     FROM FIDE_VEHICULOS_TB veh
+                     INNER JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = veh.ID_PERSONA
+                     LEFT JOIN (
+                        SELECT v1.*
+                        FROM FIDE_VISITAS_TB v1
+                        INNER JOIN (
+                            SELECT ID_PERSONA, MAX(FECHA_INGRESO) AS MAX_FECHA_INGRESO
+                            FROM FIDE_VISITAS_TB
+                            GROUP BY ID_PERSONA
+                        ) v2 ON v2.ID_PERSONA = v1.ID_PERSONA
+                            AND v2.MAX_FECHA_INGRESO = v1.FECHA_INGRESO
+                     ) v ON v.ID_PERSONA = veh.ID_PERSONA
+                         LEFT JOIN FIDE_ROLES_TB r ON r.ID_ROL = p.ID_ROL
+                     INNER JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = veh.ID_ESTADO
+                     ORDER BY veh.PLACA ASC';
+                return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+            }
 
     public function countDentro() {
         $sql =

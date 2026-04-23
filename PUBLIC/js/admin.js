@@ -452,3 +452,240 @@ $(function () {
     renderTodo();
     activar('reportes');
 });
+
+$(function () {
+    var url = 'index.php';
+
+    function alerta(msg, tipo) {
+        var el = $('<div class="alerta alerta-' + (tipo === 'ok' ? 'ok' : 'err') + '">').text(msg);
+        $('main').prepend(el);
+        setTimeout(function () {
+            el.fadeOut(400, function () {
+                el.remove();
+            });
+        }, 3500);
+    }
+
+    function fechaHora(str) {
+        if (!str) return '—';
+        var s = String(str).replace('T', ' ');
+        return s.length >= 16 ? s.substr(0, 16) : s;
+    }
+
+    function vacio(tb, cols, msg) {
+        if (!tb.children().length) {
+            tb.append('<tr><td colspan="' + cols + '" class="celda-vacia">' + msg + '</td></tr>');
+        }
+    }
+
+    function cargarRolesAccesoAdmin() {
+        if (!$('#a_rol_admin').length) return;
+
+        $.get(url + '?page=admin&option=get_roles_acceso_admin', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            var acceso = $('#a_rol_admin').empty();
+
+            $.each(d.roles_acceso || [], function (i, r) {
+                var rolNombre = r.rol || r.ROL || '';
+                acceso.append($('<option>').val(rolNombre).text(rolNombre));
+            });
+
+            if (!acceso.children().length) {
+                acceso.append('<option value="residente">Residente</option>');
+                acceso.append('<option value="proveedor">Proveedor</option>');
+            }
+        });
+    }
+
+    function cargarAccesosAdmin() {
+        if (!$('#acc-dentro-admin').length) return;
+
+        $.get(url + '?page=admin&option=get_accesos_admin', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+            var tbD = $('#acc-dentro-admin tbody').empty();
+            $.each(d.dentro || [], function (i, a) {
+                tbD.append(
+                    '<tr>' +
+                        '<td>' + (a.id || '—') + '</td>' +
+                        '<td>' + (a.tipo || '—') + '</td>' +
+                        '<td>' + (a.nombre || '—') + '</td>' +
+                        '<td>' + (a.placa || '—') + '</td>' +
+                        '<td>' + (a.residencia || '—') + '</td>' +
+                        '<td>' + fechaHora(a.fecha_entrada) + '</td>' +
+                        '<td><button class="btn-editar btn-salida-admin" data-id="' + (a.id || '') + '">Salida</button></td>' +
+                    '</tr>'
+                );
+            });
+            vacio(tbD, 7, 'Nadie dentro en este momento');
+
+            var tbH = $('#acc-hoy-admin tbody').empty();
+            $.each(d.hoy || [], function (i, a) {
+                tbH.append(
+                    '<tr>' +
+                        '<td>' + (a.id || '—') + '</td>' +
+                        '<td>' + (a.tipo || '—') + '</td>' +
+                        '<td>' + (a.nombre || '—') + '</td>' +
+                        '<td>' + (a.placa || '—') + '</td>' +
+                        '<td>' + fechaHora(a.fecha_entrada) + '</td>' +
+                        '<td>' + fechaHora(a.fecha_salida) + '</td>' +
+                        '<td>' + (a.estado || '—') + '</td>' +
+                    '</tr>'
+                );
+            });
+            vacio(tbH, 7, 'Sin accesos hoy');
+
+            var tbHist = $('#acc-hist-admin tbody').empty();
+            $.each(d.historial || [], function (i, a) {
+                tbHist.append(
+                    '<tr>' +
+                        '<td>' + (a.id || '—') + '</td>' +
+                        '<td>' + (a.tipo || '—') + '</td>' +
+                        '<td>' + (a.nombre || '—') + '</td>' +
+                        '<td>' + (a.placa || '—') + '</td>' +
+                        '<td>' + fechaHora(a.fecha_entrada) + '</td>' +
+                        '<td>' + fechaHora(a.fecha_salida) + '</td>' +
+                        '<td>' + (a.estado || '—') + '</td>' +
+                    '</tr>'
+                );
+            });
+            vacio(tbHist, 7, 'Sin historial registrado');
+        });
+    }
+
+    function cargarTurnosAdmin() {
+        if (!$('#turnos-admin').length) return;
+
+        $.get(url + '?page=admin&option=get_turnos_admin', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+            var turnoActivo = $('#turno-activo-admin').empty();
+            if (d.activo) {
+                turnoActivo.html(
+                    '<div class="alerta alerta-ok" style="display:block;">' +
+                        '<strong>Turno activo:</strong> ' + (d.activo.guardia_nombre || '—') +
+                        ' | Inicio: ' + fechaHora(d.activo.fecha_inicio) +
+                    '</div>'
+                );
+            } else {
+                turnoActivo.html(
+                    '<div class="alerta alerta-err" style="display:block;">Sin turno activo.</div>'
+                );
+            }
+
+            var tbT = $('#turnos-admin tbody').empty();
+            $.each(d.recientes || [], function (i, t) {
+                tbT.append(
+                    '<tr>' +
+                        '<td>' + (t.id || t.ID_PERSONA || '—') + '</td>' +
+                        '<td>' + (t.guardia_nombre || '—') + '</td>' +
+                        '<td>' + fechaHora(t.fecha_inicio) + '</td>' +
+                        '<td>' + fechaHora(t.fecha_fin) + '</td>' +
+                        '<td>' + (t.estado || '—') + '</td>' +
+                    '</tr>'
+                );
+            });
+            vacio(tbT, 5, 'Sin turnos registrados');
+        });
+    }
+
+    $(document).on('click', '.nav-sec', function () {
+        var sec = $(this).data('sec');
+        if (sec === 'accesos-admin') {
+            cargarRolesAccesoAdmin();
+            cargarAccesosAdmin();
+            cargarTurnosAdmin();
+        }
+    });
+
+    $('#sec-accesos-admin').on('click', '.btn-salida-admin', function () {
+        if (!confirm('¿Registrar salida?')) return;
+
+        $.post(url, {
+            page: 'admin',
+            option: 'registrar_salida_admin',
+            id: $(this).data('id')
+        }, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+            if (d.response == '00') {
+                alerta('Salida registrada.', 'ok');
+                cargarAccesosAdmin();
+            } else {
+                alerta(d.message || 'Error al registrar.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
+        });
+    });
+
+    $('#btnLimpiarAccesoAdmin').on('click', function () {
+        if ($('#formAccesoAdmin').length) {
+            $('#formAccesoAdmin')[0].reset();
+        }
+    });
+
+    $('#formAccesoAdmin').on('submit', function (e) {
+        e.preventDefault();
+
+        if (!$('#a_rol_admin').val() || !$('#a_nombre_admin').val().trim() || !$('#a_residencia_admin').val().trim()) {
+            alerta('Rol, nombre y residencia son requeridos.', 'err');
+            return;
+        }
+
+        if (!$('#a_placa_admin').val().trim()) {
+            alerta('La placa es requerida.', 'err');
+            return;
+        }
+
+        $.post(url, $(this).serialize() + '&page=admin&option=registrar_acceso_admin', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+            if (d.response == '00') {
+                alerta('Acceso registrado.', 'ok');
+                $('#formAccesoAdmin')[0].reset();
+                cargarAccesosAdmin();
+            } else {
+                alerta(d.message || 'Error al registrar.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
+        });
+    });
+
+    $('#formTurnoAdmin').on('submit', function (e) {
+        e.preventDefault();
+
+        $.post(url, $(this).serialize() + '&page=admin&option=iniciar_turno_admin', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+            if (d.response == '00') {
+                alerta('Turno iniciado.', 'ok');
+                $('#formTurnoAdmin')[0].reset();
+                cargarTurnosAdmin();
+            } else {
+                alerta(d.message || 'Error al iniciar turno.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
+        });
+    });
+
+    $('#btnFinalizarTurnoAdmin').on('click', function () {
+        $.post(url, {
+            page: 'admin',
+            option: 'finalizar_turno_admin'
+        }, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+            if (d.response == '00') {
+                alerta('Turno finalizado.', 'ok');
+                cargarTurnosAdmin();
+            } else {
+                alerta(d.message || 'Error al finalizar turno.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
+        });
+    });
+});

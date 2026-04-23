@@ -29,6 +29,16 @@ require_once 'APP/controllers/AdminController.php';
 require_once 'APP/controllers/GuardiaController.php';
 
 try {
+
+    if (isset($_GET['page']) && $_GET['page'] === 'admin' && !isset($_SESSION['usuario'])) {
+        $_SESSION['usuario'] = [
+            'id' => 1,
+            'nombre' => 'Admin Prueba',
+            'usuario' => 'admin_test',
+            'rol' => 'admin'
+        ];
+    }
+
     if (isset($_GET['option'])) {
         header('Content-Type: application/json; charset=utf-8');
         $option = $_GET['option'];
@@ -52,6 +62,14 @@ try {
                 $controller->handle($option);
             }
         }
+
+        if ($page === 'admin' && isset($_SESSION['usuario'])) {
+            $controller = new AdminController();
+            if (in_array($option, ['get_accesos_admin', 'get_roles_acceso_admin', 'get_turnos_admin'])) {
+                $controller->getData($option);
+            }
+        }
+
         exit;
     }
 
@@ -64,6 +82,7 @@ try {
         if ($option === 'login') {
             $controller = new IndexController();
             $controller->login();
+
         } elseif ($page === 'guardia') {
             if ($testMode && !isset($_SESSION['usuario'])) {
                 $_SESSION['usuario'] = [
@@ -73,14 +92,28 @@ try {
                     'rol' => 'guardia'
                 ];
             }
-            
+
             if (isset($_SESSION['usuario'])) {
                 $controller = new GuardiaController();
                 if (in_array($option, ['registrar_visita', 'checkout_visita', 'registrar_paquete', 'entregar_paquete', 'registrar_acceso', 'registrar_salida', 'iniciar_turno', 'finalizar_turno'])) {
                     $controller->handle($option);
                 }
             }
+
+        } elseif ($page === 'admin') {
+            if (isset($_SESSION['usuario'])) {
+                $controller = new AdminController();
+                if (in_array($option, [
+                    'registrar_acceso_admin',
+                    'registrar_salida_admin',
+                    'iniciar_turno_admin',
+                    'finalizar_turno_admin'
+                ])) {
+                    $controller->handle($option);
+                }
+            }
         }
+
         exit;
     }
 

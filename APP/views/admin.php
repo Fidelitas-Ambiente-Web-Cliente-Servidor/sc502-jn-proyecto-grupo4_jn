@@ -24,6 +24,11 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                         <i class="fa-solid fa-building-user"></i> Gestión de apartamentos y condóminos
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-sec" href="#" data-sec="accesos-admin">
+                        <i class="fa-solid fa-road-barrier"></i> Control de accesos
+                    </a>
+                </li>
             </ul>
             <a href="logout.php" class="nav-link nav-logout ms-3">
                 <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
@@ -43,25 +48,25 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
             <div class="tarjeta-resumen">
                 <div class="icono-tarjeta"><i class="fa-solid fa-building"></i></div>
                 <h3 id="rep-total-residencias">—</h3>
-                <p>Residencias registradas</p>
+                <p>Total de residencias</p>
             </div>
 
             <div class="tarjeta-resumen">
                 <div class="icono-tarjeta"><i class="fa-solid fa-users"></i></div>
-                <h3 id="rep-total-residentes">—</h3>
-                <p>Condóminos registrados</p>
+                <h3 id="rep-total-condominos">—</h3>
+                <p>Total de condóminos</p>
             </div>
 
             <div class="tarjeta-resumen">
-                <div class="icono-tarjeta"><i class="fa-solid fa-door-open"></i></div>
+                <div class="icono-tarjeta"><i class="fa-solid fa-house-user"></i></div>
                 <h3 id="rep-residencias-ocupadas">—</h3>
-                <p>Residencias con ocupación</p>
+                <p>Residencias ocupadas</p>
             </div>
 
             <div class="tarjeta-resumen">
-                <div class="icono-tarjeta"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="icono-tarjeta"><i class="fa-solid fa-bed"></i></div>
                 <h3 id="rep-cupos-disponibles">—</h3>
-                <p>Cupos disponibles estimados</p>
+                <p>Cupos disponibles</p>
             </div>
         </div>
 
@@ -70,7 +75,7 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                 <h3 class="subtitulo-bloque">
                     <i class="fa-solid fa-user-clock"></i> Últimos condóminos registrados
                 </h3>
-                <table id="tbl-reporte-residentes">
+                <table id="tbl-reporte-condominos">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -110,9 +115,7 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
 
         <div class="contenedor-principal">
             <div class="bloque-tabla">
-                <h3 class="subtitulo-bloque">
-                    <i class="fa-solid fa-building"></i> Residencias registradas
-                </h3>
+                <h3><i class="fa-solid fa-building"></i> Residencias registradas</h3>
                 <table id="tbl-residencias">
                     <thead>
                         <tr>
@@ -123,15 +126,13 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                             <th>Capacidad</th>
                             <th>Condóminos</th>
                             <th>Estado</th>
-                            <th>Acción</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
 
-                <h3 class="subtitulo-bloque" style="margin-top:22px">
-                    <i class="fa-solid fa-users"></i> Condóminos registrados
-                </h3>
+                <h3 style="margin-top:22px"><i class="fa-solid fa-users"></i> Condóminos registrados</h3>
                 <table id="tbl-condominos">
                     <thead>
                         <tr>
@@ -141,38 +142,36 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                             <th>Teléfono</th>
                             <th>Residencia</th>
                             <th>Estado</th>
-                            <th>Acción</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
 
-            <div class="columna-formularios">
-                <div class="bloque-formulario">
-                    <h3 id="tituloFormResidencia"><i class="fa-solid fa-plus"></i> Registrar residencia</h3>
+            <div class="bloque-formulario">
+                <div class="form-card">
+                    <h3 id="tituloFormResidencia"><i class="fa-solid fa-building"></i> Registrar residencia</h3>
                     <form id="formResidencia">
                         <input type="hidden" name="id" id="res_id">
 
-                        <label>Código / Apartamento *</label>
-                        <input type="text" name="codigo" id="res_codigo" placeholder="Ej: A-101, Casa 7" required>
+                        <label>Código / Número *</label>
+                        <input type="text" name="codigo" id="res_codigo" required>
 
                         <label>Tipo *</label>
-                        <select name="tipo" id="res_tipo" required>
-                            <option value="Apartamento">Apartamento</option>
-                            <option value="Casa">Casa</option>
-                            <option value="Local">Local</option>
-                        </select>
+                        <input type="text" name="tipo" id="res_tipo" required>
 
                         <label>Bloque / Torre</label>
-                        <input type="text" name="bloque" id="res_bloque" placeholder="Ej: Torre A, Bloque 2">
+                        <input type="text" name="bloque" id="res_bloque">
 
                         <label>Capacidad *</label>
-                        <input type="number" name="capacidad" id="res_capacidad" min="1" placeholder="Ej: 4" required>
+                        <input type="number" name="capacidad" id="res_capacidad" min="1" required>
 
                         <label>Estado *</label>
                         <select name="estado" id="res_estado" required>
-                            <option value="Activa">Activa</option>
+                            <option value="Disponible">Disponible</option>
+                            <option value="Ocupada">Ocupada</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
                             <option value="Inactiva">Inactiva</option>
                         </select>
 
@@ -185,19 +184,19 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                     </form>
                 </div>
 
-                <div class="bloque-formulario">
-                    <h3 id="tituloFormCondomino"><i class="fa-solid fa-plus"></i> Registrar condómino</h3>
+                <div class="form-card" style="margin-top:22px">
+                    <h3 id="tituloFormCondomino"><i class="fa-solid fa-user-plus"></i> Registrar condómino</h3>
                     <form id="formCondomino">
                         <input type="hidden" name="id" id="cond_id">
 
                         <label>Nombre completo *</label>
-                        <input type="text" name="nombre" id="cond_nombre" placeholder="Nombre del residente" required>
+                        <input type="text" name="nombre" id="cond_nombre" required>
 
                         <label>Identificación *</label>
-                        <input type="text" name="identificacion" id="cond_identificacion" placeholder="Cédula o ID" required>
+                        <input type="text" name="identificacion" id="cond_identificacion" required>
 
-                        <label>Teléfono</label>
-                        <input type="text" name="telefono" id="cond_telefono" placeholder="Ej: 8888-8888">
+                        <label>Teléfono *</label>
+                        <input type="text" name="telefono" id="cond_telefono" required>
 
                         <label>Residencia *</label>
                         <select name="residencia_id" id="cond_residencia" required></select>
@@ -213,6 +212,122 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                         </button>
                         <button type="reset" class="btn-limpiar" id="btnLimpiarCondomino">
                             <i class="fa-solid fa-broom"></i> Limpiar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="seccion" id="sec-accesos-admin" style="display:none;">
+        <h2><i class="fa-solid fa-road-barrier"></i> Control de accesos</h2>
+        <p>Registros de entrada y salida de visitas y gestión de cambios de turno.</p>
+
+        <div class="contenedor-principal">
+            <div class="bloque-tabla">
+                <h3>Accesos dentro</h3>
+                <table id="acc-dentro-admin">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Nombre</th>
+                            <th>Placa</th>
+                            <th>Residencia</th>
+                            <th>Entrada</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <h3>Accesos de hoy</h3>
+                <table id="acc-hoy-admin">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Nombre</th>
+                            <th>Placa</th>
+                            <th>Entrada</th>
+                            <th>Salida</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <h3>Historial de accesos</h3>
+                <table id="acc-hist-admin">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Nombre</th>
+                            <th>Placa</th>
+                            <th>Entrada</th>
+                            <th>Salida</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <h3>Turno actual</h3>
+                <div id="turno-activo-admin"></div>
+
+                <h3>Turnos recientes</h3>
+                <table id="turnos-admin">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Guardia</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="bloque-formulario">
+                <h3>Registrar acceso</h3>
+                <form id="formAccesoAdmin">
+                    <label>Rol</label>
+                    <select id="a_rol_admin" name="rol"></select>
+
+                    <label>Nombre</label>
+                    <input type="text" id="a_nombre_admin" name="nombre">
+
+                    <label>Placa</label>
+                    <input type="text" id="a_placa_admin" name="placa">
+
+                    <label>Residencia</label>
+                    <input type="text" id="a_residencia_admin" name="residencia">
+
+                    <button type="submit">
+                        <i class="fa-solid fa-check"></i> Registrar acceso
+                    </button>
+                    <button type="button" class="btn-limpiar" id="btnLimpiarAccesoAdmin">
+                        <i class="fa-solid fa-broom"></i> Limpiar
+                    </button>
+                </form>
+
+                <div class="form-card" style="margin-top:22px">
+                    <h3>Gestión de turno</h3>
+                    <form id="formTurnoAdmin">
+                        <label>Nombre</label>
+                        <input type="text" id="guardia_nombre_admin" name="guardia_nombre">
+
+                        <label>Notas</label>
+                        <textarea id="notas_turno_admin" name="notas"></textarea>
+
+                        <button type="submit">
+                            <i class="fa-solid fa-play"></i> Iniciar turno
+                        </button>
+                        <button type="button" class="btn-limpiar" id="btnFinalizarTurnoAdmin">
+                            <i class="fa-solid fa-stop"></i> Finalizar turno
                         </button>
                     </form>
                 </div>

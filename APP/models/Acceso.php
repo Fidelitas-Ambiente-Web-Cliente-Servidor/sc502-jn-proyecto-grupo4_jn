@@ -255,6 +255,25 @@ class Acceso {
         return $okVeh && $rowsVehActualizadas > 0;
     }
 
+    public function eliminarLogico($idPersona) {
+        $idEstadoInactivo = $this->getEstadoId(['INACTIVO']);
+        $fechaSalida = $this->ahoraCR();
+
+        $v = $this->conn->prepare('UPDATE FIDE_VEHICULOS_TB SET ID_ESTADO=? WHERE ID_PERSONA=?');
+        $v->bind_param('ii', $idEstadoInactivo, $idPersona);
+        $okVeh = $v->execute();
+
+        $vis = $this->conn->prepare(
+            'UPDATE FIDE_VISITAS_TB
+             SET FECHA_SALIDA=COALESCE(FECHA_SALIDA, ?), ID_ESTADO=?
+             WHERE ID_PERSONA=?'
+        );
+        $vis->bind_param('sii', $fechaSalida, $idEstadoInactivo, $idPersona);
+        $okVis = $vis->execute();
+
+        return ($okVeh || $okVis);
+    }
+
     public function getDentro() {
         $sql =
             'SELECT
@@ -271,7 +290,7 @@ class Acceso {
                 CONCAT("Residencia ", COALESCE(v.ID_RESIDENCIA, "—")) AS residencia,
                 DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
                      NULL AS fecha_salida,
-                "Dentro" AS estado
+                 COALESCE(e.NOMBRE_ESTADO, "—") AS estado
              FROM FIDE_VEHICULOS_TB veh
              INNER JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = veh.ID_PERSONA
                  LEFT JOIN FIDE_VISITAS_TB v ON v.ID_PERSONA = veh.ID_PERSONA AND v.FECHA_SALIDA IS NULL
@@ -299,11 +318,7 @@ class Acceso {
                 CONCAT("Residencia ", COALESCE(v.ID_RESIDENCIA, "—")) AS residencia,
                 DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
                 DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
-                CASE
-                    WHEN v.FECHA_SALIDA IS NOT NULL THEN "Salió"
-                    WHEN LOWER(e.NOMBRE_ESTADO) = "adentro" THEN "Dentro"
-                    ELSE "Salió"
-                END AS estado
+                COALESCE(e.NOMBRE_ESTADO, "—") AS estado
              FROM FIDE_VEHICULOS_TB veh
              INNER JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = veh.ID_PERSONA
              LEFT JOIN (
@@ -346,11 +361,7 @@ class Acceso {
                         CONCAT("Residencia ", COALESCE(v.ID_RESIDENCIA, "—")) AS residencia,
                         DATE_FORMAT(v.FECHA_INGRESO, "%Y-%m-%d %H:%i:%s") AS fecha_entrada,
                         DATE_FORMAT(v.FECHA_SALIDA, "%Y-%m-%d %H:%i:%s") AS fecha_salida,
-                        CASE
-                            WHEN v.FECHA_SALIDA IS NOT NULL THEN "Salió"
-                            WHEN LOWER(COALESCE(e.NOMBRE_ESTADO, "")) IN ("afuera", "salio", "salió") THEN "Salió"
-                            ELSE "Dentro"
-                        END AS estado
+                        COALESCE(e.NOMBRE_ESTADO, "—") AS estado
                      FROM FIDE_VEHICULOS_TB veh
                      INNER JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = veh.ID_PERSONA
                      LEFT JOIN (

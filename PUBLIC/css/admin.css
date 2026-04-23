@@ -20,6 +20,7 @@
     --color-activo: #1e8a3a;
     --color-pendiente: #c07a10;
     --color-inactivo: #c0392b;
+    --color-mantenimiento: #c79b00;
     --radio-borde: 7px;
     --sombra: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
@@ -359,12 +360,37 @@ tbody tr:hover {
     font-weight: 700;
 }
 
+.estado-dentro {
+    color: var(--color-activo);
+    font-weight: 700;
+}
+
 .estado-pendiente {
     color: var(--color-pendiente);
     font-weight: 700;
 }
 
+.estado-afuera {
+    color: var(--color-pendiente);
+    font-weight: 700;
+}
+
+.estado-salio {
+    color: var(--color-pendiente);
+    font-weight: 700;
+}
+
+.estado-mantenimiento {
+    color: var(--color-mantenimiento);
+    font-weight: 700;
+}
+
 .estado-inactivo {
+    color: var(--color-inactivo);
+    font-weight: 700;
+}
+
+.estado-vetado {
     color: var(--color-inactivo);
     font-weight: 700;
 }

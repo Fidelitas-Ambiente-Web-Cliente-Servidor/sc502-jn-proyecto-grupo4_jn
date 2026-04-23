@@ -29,6 +29,11 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                         <i class="fa-solid fa-road-barrier"></i> Control de accesos
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-sec" href="#" data-sec="turnos-admin">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Gestión de turnos
+                    </a>
+                </li>
             </ul>
             <a href="logout.php" class="nav-link nav-logout ms-3">
                 <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
@@ -122,8 +127,6 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                             <th>#</th>
                             <th>Código</th>
                             <th>Tipo</th>
-                            <th>Bloque / Torre</th>
-                            <th>Capacidad</th>
                             <th>Condóminos</th>
                             <th>Estado</th>
                             <th>Acciones</th>
@@ -160,12 +163,6 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
 
                         <label>Tipo *</label>
                         <input type="text" name="tipo" id="res_tipo" required>
-
-                        <label>Bloque / Torre</label>
-                        <input type="text" name="bloque" id="res_bloque">
-
-                        <label>Capacidad *</label>
-                        <input type="number" name="capacidad" id="res_capacidad" min="1" required>
 
                         <label>Estado *</label>
                         <select name="estado" id="res_estado" required>
@@ -221,42 +218,10 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
 
     <section class="seccion" id="sec-accesos-admin" style="display:none;">
         <h2><i class="fa-solid fa-road-barrier"></i> Control de accesos</h2>
-        <p>Registros de entrada y salida de visitas y gestión de cambios de turno.</p>
+        <p>Historial de accesos con eliminación lógica.</p>
 
         <div class="contenedor-principal">
             <div class="bloque-tabla">
-                <h3>Accesos dentro</h3>
-                <table id="acc-dentro-admin">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tipo</th>
-                            <th>Nombre</th>
-                            <th>Placa</th>
-                            <th>Residencia</th>
-                            <th>Entrada</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-
-                <h3>Accesos de hoy</h3>
-                <table id="acc-hoy-admin">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tipo</th>
-                            <th>Nombre</th>
-                            <th>Placa</th>
-                            <th>Entrada</th>
-                            <th>Salida</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-
                 <h3>Historial de accesos</h3>
                 <table id="acc-hist-admin">
                     <thead>
@@ -268,23 +233,30 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
                             <th>Entrada</th>
                             <th>Salida</th>
                             <th>Estado</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </div>
+    </section>
 
-                <h3>Turno actual</h3>
-                <div id="turno-activo-admin"></div>
+    <section class="seccion" id="sec-turnos-admin" style="display:none;">
+        <h2><i class="fa-solid fa-clock-rotate-left"></i> Gestión de turnos</h2>
+        <p>Edición y eliminación lógica de turnos registrados.</p>
 
-                <h3>Turnos recientes</h3>
+        <div class="contenedor-principal">
+            <div class="bloque-tabla">
+                <h3>Turnos registrados</h3>
                 <table id="turnos-admin">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Guardia</th>
-                            <th>Inicio</th>
-                            <th>Fin</th>
+                            <th>Persona</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
                             <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -292,45 +264,34 @@ $nombreAdmin = htmlspecialchars($_SESSION['usuario']['nombre'] ?? 'Administrador
             </div>
 
             <div class="bloque-formulario">
-                <h3>Registrar acceso</h3>
-                <form id="formAccesoAdmin">
-                    <label>Rol</label>
-                    <select id="a_rol_admin" name="rol"></select>
+                <h3 id="tituloTurnoAdmin"><i class="fa-solid fa-pen"></i> Editar turno</h3>
+                <form id="formTurnoAdmin">
+                    <input type="hidden" name="id_persona" id="turno_id_persona">
+                    <input type="hidden" name="id_fechas" id="turno_id_fechas">
+                    <input type="hidden" name="id_horario" id="turno_id_horario">
 
-                    <label>Nombre</label>
-                    <input type="text" id="a_nombre_admin" name="nombre">
+                    <label>Guardia *</label>
+                    <input type="text" name="guardia_nombre" id="turno_guardia_nombre" required>
 
-                    <label>Placa</label>
-                    <input type="text" id="a_placa_admin" name="placa">
+                    <label>Fecha *</label>
+                    <input type="date" name="fecha_turno" id="turno_fecha" required>
 
-                    <label>Residencia</label>
-                    <input type="text" id="a_residencia_admin" name="residencia">
+                    <label>Horario *</label>
+                    <input type="text" name="horario_turno" id="turno_horario" placeholder="Ej: 06:00 - 14:00" required>
+
+                    <label>Estado *</label>
+                    <select name="estado" id="turno_estado" required>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
 
                     <button type="submit">
-                        <i class="fa-solid fa-check"></i> Registrar acceso
+                        <i class="fa-solid fa-check"></i> Guardar cambios
                     </button>
-                    <button type="button" class="btn-limpiar" id="btnLimpiarAccesoAdmin">
+                    <button type="button" class="btn-limpiar" id="btnLimpiarTurnoAdmin">
                         <i class="fa-solid fa-broom"></i> Limpiar
                     </button>
                 </form>
-
-                <div class="form-card" style="margin-top:22px">
-                    <h3>Gestión de turno</h3>
-                    <form id="formTurnoAdmin">
-                        <label>Nombre</label>
-                        <input type="text" id="guardia_nombre_admin" name="guardia_nombre">
-
-                        <label>Notas</label>
-                        <textarea id="notas_turno_admin" name="notas"></textarea>
-
-                        <button type="submit">
-                            <i class="fa-solid fa-play"></i> Iniciar turno
-                        </button>
-                        <button type="button" class="btn-limpiar" id="btnFinalizarTurnoAdmin">
-                            <i class="fa-solid fa-stop"></i> Finalizar turno
-                        </button>
-                    </form>
-                </div>
             </div>
         </div>
     </section>

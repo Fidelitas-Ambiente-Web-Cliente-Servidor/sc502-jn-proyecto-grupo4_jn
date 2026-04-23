@@ -65,7 +65,7 @@ try {
 
         if ($page === 'admin' && isset($_SESSION['usuario'])) {
             $controller = new AdminController();
-            if (in_array($option, ['get_accesos_admin', 'get_roles_acceso_admin', 'get_turnos_admin'])) {
+            if (in_array($option, ['get_gestion_admin', 'get_accesos_admin', 'get_roles_acceso_admin', 'get_turnos_admin'])) {
                 $controller->getData($option);
             }
         }
@@ -104,8 +104,15 @@ try {
             if (isset($_SESSION['usuario'])) {
                 $controller = new AdminController();
                 if (in_array($option, [
+                    'registrar_residencia_admin',
+                    'eliminar_residencia_admin',
+                    'registrar_condomino_admin',
+                    'eliminar_condomino_admin',
                     'registrar_acceso_admin',
                     'registrar_salida_admin',
+                    'eliminar_acceso_admin',
+                    'guardar_turno_admin',
+                    'eliminar_turno_admin',
                     'iniciar_turno_admin',
                     'finalizar_turno_admin'
                 ])) {

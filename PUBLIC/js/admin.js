@@ -1,6 +1,15 @@
 $(function () {
-    var KEY_RESIDENCIAS = 'aralias_admin_residencias';
-    var KEY_CONDOMINOS = 'aralias_admin_condominos';
+    var url = 'index.php';
+    var cache = {
+        residencias: [],
+        condominos: [],
+        resumen: {
+            total_residencias: 0,
+            total_condominos: 0,
+            residencias_ocupadas: 0,
+            cupos_disponibles: 0
+        }
+    };
 
     function alerta(msg, tipo) {
         var el = $('<div class="alerta alerta-' + (tipo === 'ok' ? 'ok' : 'err') + '">').text(msg);
@@ -18,102 +27,42 @@ $(function () {
         }
     }
 
-    function ahoraTexto() {
-        var d = new Date();
-        var yyyy = d.getFullYear();
-        var mm = String(d.getMonth() + 1).padStart(2, '0');
-        var dd = String(d.getDate()).padStart(2, '0');
-        var hh = String(d.getHours()).padStart(2, '0');
-        var mi = String(d.getMinutes()).padStart(2, '0');
-        return yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + mi;
-    }
-
-    function leer(clave) {
-        try {
-            return JSON.parse(localStorage.getItem(clave)) || [];
-        } catch (e) {
-            return [];
+    function estadoClass(estado) {
+        var e = String(estado || '').trim().toLowerCase();
+        if (e === 'activo' || e === 'activa' || e === 'disponible' || e === 'ocupada' || e === 'dentro' || e === 'adentro') {
+            return 'activo';
         }
-    }
-
-    function guardar(clave, datos) {
-        localStorage.setItem(clave, JSON.stringify(datos));
-    }
-
-    function siguienteId(lista) {
-        var max = 0;
-        $.each(lista, function (_, item) {
-            var id = parseInt(item.id, 10) || 0;
-            if (id > max) max = id;
-        });
-        return max + 1;
-    }
-
-    function getResidencias() {
-        return leer(KEY_RESIDENCIAS);
-    }
-
-    function getCondominos() {
-        return leer(KEY_CONDOMINOS);
-    }
-
-    function saveResidencias(data) {
-        guardar(KEY_RESIDENCIAS, data);
-    }
-
-    function saveCondominos(data) {
-        guardar(KEY_CONDOMINOS, data);
-    }
-
-    function sembrarDatosSiHaceFalta() {
-        var residencias = getResidencias();
-        var condominos = getCondominos();
-
-        if (!residencias.length) {
-            residencias = [
-                { id: 1, codigo: 'A-101', tipo: 'Apartamento', bloque: 'Torre A', capacidad: 4, estado: 'Activa' },
-                { id: 2, codigo: 'A-102', tipo: 'Apartamento', bloque: 'Torre A', capacidad: 3, estado: 'Activa' },
-                { id: 3, codigo: 'Casa 7', tipo: 'Casa', bloque: 'Residencial Norte', capacidad: 5, estado: 'Activa' }
-            ];
-            saveResidencias(residencias);
+        if (e === 'afuera' || e === 'salio' || e === 'salió') {
+            return 'afuera';
         }
-
-        if (!condominos.length) {
-            condominos = [
-                { id: 1, nombre: 'Daniela Mora', identificacion: '123456789', telefono: '8888-1111', residencia_id: 1, estado: 'Activo', fecha_registro: ahoraTexto() },
-                { id: 2, nombre: 'María Jiménez', identificacion: '223456789', telefono: '8888-2222', residencia_id: 1, estado: 'Activo', fecha_registro: ahoraTexto() },
-                { id: 3, nombre: 'Carlos Rojas', identificacion: '323456789', telefono: '8888-3333', residencia_id: 2, estado: 'Activo', fecha_registro: ahoraTexto() }
-            ];
-            saveCondominos(condominos);
+        if (e === 'mantenimiento' || e === 'en mantenimiento') {
+            return 'mantenimiento';
         }
+        if (e === 'vetado') {
+            return 'vetado';
+        }
+        if (e === 'pendiente') {
+            return 'pendiente';
+        }
+        return 'inactivo';
     }
 
-    function contarCondominosPorResidencia(idResidencia) {
-        var condominos = getCondominos();
-        var total = 0;
-        $.each(condominos, function (_, c) {
-            if (parseInt(c.residencia_id, 10) === parseInt(idResidencia, 10)) {
-                total++;
-            }
+    function fetchGestion(cb) {
+        $.get(url + '?page=admin&option=get_gestion_admin', function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            cache.residencias = d.residencias || [];
+            cache.condominos = d.condominos || [];
+            cache.resumen = d.resumen || cache.resumen;
+            if (typeof cb === 'function') cb();
+        }).fail(function () {
+            alerta('No se pudo cargar gestión desde la base de datos.', 'err');
+            if (typeof cb === 'function') cb();
         });
-        return total;
-    }
-
-    function nombreResidencia(idResidencia) {
-        var residencias = getResidencias();
-        var nombre = '—';
-        $.each(residencias, function (_, r) {
-            if (parseInt(r.id, 10) === parseInt(idResidencia, 10)) {
-                nombre = r.codigo;
-                return false;
-            }
-        });
-        return nombre;
     }
 
     function llenarSelectResidencias() {
         var select = $('#cond_residencia').empty();
-        var residencias = getResidencias();
+        var residencias = cache.residencias;
 
         if (!residencias.length) {
             select.append('<option value="">No hay residencias registradas</option>');
@@ -130,54 +79,37 @@ $(function () {
     }
 
     function renderResumen() {
-        var residencias = getResidencias();
-        var condominos = getCondominos();
+        $('#rep-total-residencias').text(cache.resumen.total_residencias || 0);
+        $('#rep-total-condominos').text(cache.resumen.total_condominos || 0);
+        $('#rep-residencias-ocupadas').text(cache.resumen.residencias_ocupadas || 0);
+        $('#rep-cupos-disponibles').text(cache.resumen.cupos_disponibles || 0);
 
-        var ocupadas = 0;
-        var cuposDisponibles = 0;
-
-        $.each(residencias, function (_, r) {
-            var ocupantes = contarCondominosPorResidencia(r.id);
-            if (ocupantes > 0) ocupadas++;
-            cuposDisponibles += Math.max((parseInt(r.capacidad, 10) || 0) - ocupantes, 0);
-        });
-
-        $('#rep-total-residencias').text(residencias.length);
-        $('#rep-total-residentes').text(condominos.length);
-        $('#rep-residencias-ocupadas').text(ocupadas);
-        $('#rep-cupos-disponibles').text(cuposDisponibles);
-
-        var tbResidentes = $('#tbl-reporte-residentes tbody').empty();
-        var recientes = condominos.slice().sort(function (a, b) {
-            return String(b.fecha_registro || '').localeCompare(String(a.fecha_registro || ''));
-        });
-
-        $.each(recientes, function (_, c) {
-            tbResidentes.append(
+        var tbCondominosRep = $('#tbl-reporte-condominos tbody').empty();
+        $.each(cache.condominos, function (_, c) {
+            tbCondominosRep.append(
                 '<tr>' +
                     '<td>' + c.id + '</td>' +
-                    '<td>' + c.nombre + '</td>' +
-                    '<td>' + c.identificacion + '</td>' +
-                    '<td>' + nombreResidencia(c.residencia_id) + '</td>' +
-                    '<td><span class="estado-' + (c.estado === 'Activo' ? 'activo' : 'inactivo') + '">' + c.estado + '</span></td>' +
+                    '<td>' + (c.nombre || '—') + '</td>' +
+                    '<td>' + (c.identificacion || '—') + '</td>' +
+                    '<td>' + (c.residencia_codigo || ('Residencia ' + (c.residencia_id || '—'))) + '</td>' +
+                    '<td><span class="estado-' + estadoClass(c.estado) + '">' + (c.estado || '—') + '</span></td>' +
                     '<td>' + (c.fecha_registro || '—') + '</td>' +
                 '</tr>'
             );
         });
-        vacio(tbResidentes, 6, 'No hay condóminos registrados');
+        vacio(tbCondominosRep, 6, 'No hay condóminos registrados');
 
         var tbResidencias = $('#tbl-reporte-residencias tbody').empty();
-        $.each(residencias, function (_, r) {
-            var ocupantes = contarCondominosPorResidencia(r.id);
+        $.each(cache.residencias, function (_, r) {
             tbResidencias.append(
                 '<tr>' +
-                    '<td>' + r.id + '</td>' +
-                    '<td>' + r.codigo + '</td>' +
-                    '<td>' + r.tipo + '</td>' +
+                    '<td>' + (r.id || '—') + '</td>' +
+                    '<td>' + (r.codigo || '—') + '</td>' +
+                    '<td>' + (r.tipo || '—') + '</td>' +
                     '<td>' + (r.bloque || '—') + '</td>' +
-                    '<td>' + r.capacidad + '</td>' +
-                    '<td>' + ocupantes + '</td>' +
-                    '<td><span class="estado-' + (r.estado === 'Activa' ? 'activo' : 'inactivo') + '">' + r.estado + '</span></td>' +
+                    '<td>' + (r.capacidad || '—') + '</td>' +
+                    '<td>' + (r.condominos || 0) + '</td>' +
+                    '<td><span class="estado-' + estadoClass(r.estado) + '">' + (r.estado || '—') + '</span></td>' +
                 '</tr>'
             );
         });
@@ -185,43 +117,37 @@ $(function () {
     }
 
     function renderGestion() {
-        var residencias = getResidencias();
-        var condominos = getCondominos();
-
         var tbResidencias = $('#tbl-residencias tbody').empty();
-        $.each(residencias, function (_, r) {
-            var ocupantes = contarCondominosPorResidencia(r.id);
+        $.each(cache.residencias, function (_, r) {
             tbResidencias.append(
                 '<tr>' +
-                    '<td>' + r.id + '</td>' +
-                    '<td>' + r.codigo + '</td>' +
-                    '<td>' + r.tipo + '</td>' +
-                    '<td>' + (r.bloque || '—') + '</td>' +
-                    '<td>' + r.capacidad + '</td>' +
-                    '<td>' + ocupantes + '</td>' +
-                    '<td><span class="estado-' + (r.estado === 'Activa' ? 'activo' : 'inactivo') + '">' + r.estado + '</span></td>' +
+                    '<td>' + (r.id || '—') + '</td>' +
+                    '<td>' + (r.codigo || '—') + '</td>' +
+                    '<td>' + (r.tipo || '—') + '</td>' +
+                    '<td>' + (r.condominos || 0) + '</td>' +
+                    '<td><span class="estado-' + estadoClass(r.estado) + '">' + (r.estado || '—') + '</span></td>' +
                     '<td class="tabla-acciones">' +
-                        '<button class="btn-editar btn-editar-residencia" data-id="' + r.id + '"><i class="fa-solid fa-pen"></i> Editar</button>' +
-                        '<button class="btn-eliminar btn-eliminar-residencia" data-id="' + r.id + '"><i class="fa-solid fa-trash"></i> Eliminar</button>' +
+                        '<button class="btn-editar btn-editar-residencia" data-id="' + (r.id || '') + '"><i class="fa-solid fa-pen"></i> Editar</button>' +
+                        '<button class="btn-eliminar btn-eliminar-residencia" data-id="' + (r.id || '') + '"><i class="fa-solid fa-trash"></i> Eliminar</button>' +
                     '</td>' +
                 '</tr>'
             );
         });
-        vacio(tbResidencias, 8, 'No hay residencias registradas');
+        vacio(tbResidencias, 6, 'No hay residencias registradas');
 
         var tbCondominos = $('#tbl-condominos tbody').empty();
-        $.each(condominos, function (_, c) {
+        $.each(cache.condominos, function (_, c) {
             tbCondominos.append(
                 '<tr>' +
-                    '<td>' + c.id + '</td>' +
-                    '<td>' + c.nombre + '</td>' +
-                    '<td>' + c.identificacion + '</td>' +
+                    '<td>' + (c.id || '—') + '</td>' +
+                    '<td>' + (c.nombre || '—') + '</td>' +
+                    '<td>' + (c.identificacion || '—') + '</td>' +
                     '<td>' + (c.telefono || '—') + '</td>' +
-                    '<td>' + nombreResidencia(c.residencia_id) + '</td>' +
-                    '<td><span class="estado-' + (c.estado === 'Activo' ? 'activo' : 'inactivo') + '">' + c.estado + '</span></td>' +
+                    '<td>' + (c.residencia_codigo || ('Residencia ' + (c.residencia_id || '—'))) + '</td>' +
+                    '<td><span class="estado-' + estadoClass(c.estado) + '">' + (c.estado || '—') + '</span></td>' +
                     '<td class="tabla-acciones">' +
-                        '<button class="btn-editar btn-editar-condomino" data-id="' + c.id + '"><i class="fa-solid fa-pen"></i> Editar</button>' +
-                        '<button class="btn-eliminar btn-eliminar-condomino" data-id="' + c.id + '"><i class="fa-solid fa-trash"></i> Eliminar</button>' +
+                        '<button class="btn-editar btn-editar-condomino" data-id="' + (c.id || '') + '"><i class="fa-solid fa-pen"></i> Editar</button>' +
+                        '<button class="btn-eliminar btn-eliminar-condomino" data-id="' + (c.id || '') + '"><i class="fa-solid fa-trash"></i> Eliminar</button>' +
                     '</td>' +
                 '</tr>'
             );
@@ -255,8 +181,12 @@ $(function () {
         $('.nav-sec').removeClass('activo');
         $('.nav-sec[data-sec="' + sec + '"]').addClass('activo');
 
-        if (sec === 'reportes') renderResumen();
-        if (sec === 'gestion') renderGestion();
+        if (sec === 'reportes' || sec === 'gestion') {
+            fetchGestion(function () {
+                if (sec === 'reportes') renderResumen();
+                if (sec === 'gestion') renderGestion();
+            });
+        }
     }
 
     $('.nav-sec').on('click', function (e) {
@@ -267,173 +197,112 @@ $(function () {
     $('#formResidencia').on('submit', function (e) {
         e.preventDefault();
 
-        var id = $('#res_id').val();
-        var codigo = $('#res_codigo').val().trim();
-        var tipo = $('#res_tipo').val();
-        var bloque = $('#res_bloque').val().trim();
-        var capacidad = parseInt($('#res_capacidad').val(), 10);
-        var estado = $('#res_estado').val();
-
-        if (!codigo || !tipo || !capacidad || capacidad < 1) {
-            alerta('Complete correctamente los datos de la residencia.', 'err');
-            return;
-        }
-
-        var residencias = getResidencias();
-
-        if (id) {
-            $.each(residencias, function (_, r) {
-                if (parseInt(r.id, 10) === parseInt(id, 10)) {
-                    r.codigo = codigo;
-                    r.tipo = tipo;
-                    r.bloque = bloque;
-                    r.capacidad = capacidad;
-                    r.estado = estado;
-                    return false;
-                }
-            });
-            saveResidencias(residencias);
-            alerta('Residencia actualizada correctamente.', 'ok');
-        } else {
-            residencias.push({
-                id: siguienteId(residencias),
-                codigo: codigo,
-                tipo: tipo,
-                bloque: bloque,
-                capacidad: capacidad,
-                estado: estado
-            });
-            saveResidencias(residencias);
-            alerta('Residencia registrada correctamente.', 'ok');
-        }
-
-        limpiarFormResidencia();
-        renderTodo();
+        var payload = $(this).serialize() + '&page=admin&option=registrar_residencia_admin';
+        $.post(url, payload, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (d.response == '00') {
+                alerta('Residencia guardada correctamente.', 'ok');
+                limpiarFormResidencia();
+                fetchGestion(renderTodo);
+            } else {
+                alerta(d.message || 'No se pudo guardar la residencia.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
+        });
     });
 
     $('#formCondomino').on('submit', function (e) {
         e.preventDefault();
 
-        var id = $('#cond_id').val();
-        var nombre = $('#cond_nombre').val().trim();
-        var identificacion = $('#cond_identificacion').val().trim();
-        var telefono = $('#cond_telefono').val().trim();
-        var residenciaId = $('#cond_residencia').val();
-        var estado = $('#cond_estado').val();
-
-        if (!nombre || !identificacion || !residenciaId) {
-            alerta('Nombre, identificación y residencia son requeridos.', 'err');
-            return;
-        }
-
-        if (!getResidencias().length) {
-            alerta('Primero debe registrar una residencia.', 'err');
-            return;
-        }
-
-        var condominos = getCondominos();
-
-        if (id) {
-            $.each(condominos, function (_, c) {
-                if (parseInt(c.id, 10) === parseInt(id, 10)) {
-                    c.nombre = nombre;
-                    c.identificacion = identificacion;
-                    c.telefono = telefono;
-                    c.residencia_id = parseInt(residenciaId, 10);
-                    c.estado = estado;
-                    return false;
-                }
-            });
-            saveCondominos(condominos);
-            alerta('Condómino actualizado correctamente.', 'ok');
-        } else {
-            condominos.push({
-                id: siguienteId(condominos),
-                nombre: nombre,
-                identificacion: identificacion,
-                telefono: telefono,
-                residencia_id: parseInt(residenciaId, 10),
-                estado: estado,
-                fecha_registro: ahoraTexto()
-            });
-            saveCondominos(condominos);
-            alerta('Condómino registrado correctamente.', 'ok');
-        }
-
-        limpiarFormCondomino();
-        renderTodo();
+        var payload = $(this).serialize() + '&page=admin&option=registrar_condomino_admin';
+        $.post(url, payload, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (d.response == '00') {
+                alerta('Condómino guardado correctamente.', 'ok');
+                limpiarFormCondomino();
+                fetchGestion(renderTodo);
+            } else {
+                alerta(d.message || 'No se pudo guardar el condómino.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
+        });
     });
 
     $('#tbl-residencias').on('click', '.btn-editar-residencia', function () {
         var id = parseInt($(this).data('id'), 10);
-        var residencias = getResidencias();
-
-        $.each(residencias, function (_, r) {
-            if (parseInt(r.id, 10) === id) {
-                $('#res_id').val(r.id);
-                $('#res_codigo').val(r.codigo);
-                $('#res_tipo').val(r.tipo);
-                $('#res_bloque').val(r.bloque);
-                $('#res_capacidad').val(r.capacidad);
-                $('#res_estado').val(r.estado);
-                $('#tituloFormResidencia').html('<i class="fa-solid fa-pen"></i> Editar residencia').addClass('modo-edicion');
+        var r = null;
+        $.each(cache.residencias, function (_, row) {
+            if (parseInt(row.id, 10) === id) {
+                r = row;
                 return false;
             }
         });
+        if (!r) return;
+
+        $('#res_id').val(r.id || '');
+        $('#res_codigo').val(r.codigo || '');
+        $('#res_tipo').val(r.tipo || 'Residencial');
+        $('#res_estado').val(r.estado || 'Disponible');
+        $('#tituloFormResidencia').html('<i class="fa-solid fa-pen"></i> Editar residencia').addClass('modo-edicion');
     });
 
     $('#tbl-condominos').on('click', '.btn-editar-condomino', function () {
         var id = parseInt($(this).data('id'), 10);
-        var condominos = getCondominos();
-
-        $.each(condominos, function (_, c) {
-            if (parseInt(c.id, 10) === id) {
-                llenarSelectResidencias();
-                $('#cond_id').val(c.id);
-                $('#cond_nombre').val(c.nombre);
-                $('#cond_identificacion').val(c.identificacion);
-                $('#cond_telefono').val(c.telefono);
-                $('#cond_residencia').val(c.residencia_id);
-                $('#cond_estado').val(c.estado);
-                $('#tituloFormCondomino').html('<i class="fa-solid fa-pen"></i> Editar condómino').addClass('modo-edicion');
+        var c = null;
+        $.each(cache.condominos, function (_, row) {
+            if (parseInt(row.id, 10) === id) {
+                c = row;
                 return false;
             }
         });
+        if (!c) return;
+
+        llenarSelectResidencias();
+        $('#cond_id').val(c.id || '');
+        $('#cond_nombre').val(c.nombre || '');
+        $('#cond_identificacion').val(c.identificacion || '');
+        $('#cond_telefono').val((c.telefono === '—' ? '' : (c.telefono || '')));
+        $('#cond_residencia').val(c.residencia_id || '');
+        $('#cond_estado').val(c.estado || 'Activo');
+        $('#tituloFormCondomino').html('<i class="fa-solid fa-pen"></i> Editar condómino').addClass('modo-edicion');
     });
 
     $('#tbl-residencias').on('click', '.btn-eliminar-residencia', function () {
         var id = parseInt($(this).data('id'), 10);
-
-        if (contarCondominosPorResidencia(id) > 0) {
-            alerta('No puede eliminar una residencia que tiene condóminos asociados.', 'err');
-            return;
-        }
-
         if (!confirm('¿Desea eliminar esta residencia?')) return;
 
-        var residencias = $.grep(getResidencias(), function (r) {
-            return parseInt(r.id, 10) !== id;
+        $.post(url, { page: 'admin', option: 'eliminar_residencia_admin', id: id }, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (d.response == '00') {
+                alerta('Residencia eliminada correctamente.', 'ok');
+                limpiarFormResidencia();
+                fetchGestion(renderTodo);
+            } else {
+                alerta(d.message || 'No se pudo eliminar la residencia.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
         });
-
-        saveResidencias(residencias);
-        limpiarFormResidencia();
-        renderTodo();
-        alerta('Residencia eliminada correctamente.', 'ok');
     });
 
     $('#tbl-condominos').on('click', '.btn-eliminar-condomino', function () {
         var id = parseInt($(this).data('id'), 10);
-
         if (!confirm('¿Desea eliminar este condómino?')) return;
 
-        var condominos = $.grep(getCondominos(), function (c) {
-            return parseInt(c.id, 10) !== id;
+        $.post(url, { page: 'admin', option: 'eliminar_condomino_admin', id: id }, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (d.response == '00') {
+                alerta('Condómino eliminado correctamente.', 'ok');
+                limpiarFormCondomino();
+                fetchGestion(renderTodo);
+            } else {
+                alerta(d.message || 'No se pudo eliminar el condómino.', 'err');
+            }
+        }).fail(function (xhr) {
+            alert(xhr.responseText || 'Error al conectar con el servidor.');
         });
-
-        saveCondominos(condominos);
-        limpiarFormCondomino();
-        renderTodo();
-        alerta('Condómino eliminado correctamente.', 'ok');
     });
 
     $('#btnLimpiarResidencia').on('click', function () {
@@ -448,21 +317,37 @@ $(function () {
         }, 0);
     });
 
-    sembrarDatosSiHaceFalta();
-    renderTodo();
-    activar('reportes');
+    fetchGestion(function () {
+        renderTodo();
+        activar('reportes');
+    });
 });
 
 $(function () {
     var url = 'index.php';
 
+    function estadoClass(estado) {
+        var e = String(estado || '').trim().toLowerCase();
+        if (e === 'activo' || e === 'activa' || e === 'dentro' || e === 'adentro' || e === 'disponible' || e === 'ocupada') {
+            return 'activo';
+        }
+        if (e === 'afuera' || e === 'salio' || e === 'salió') {
+            return 'afuera';
+        }
+        if (e === 'mantenimiento') {
+            return 'mantenimiento';
+        }
+        if (e === 'pendiente') {
+            return 'pendiente';
+        }
+        return 'inactivo';
+    }
+
     function alerta(msg, tipo) {
         var el = $('<div class="alerta alerta-' + (tipo === 'ok' ? 'ok' : 'err') + '">').text(msg);
         $('main').prepend(el);
         setTimeout(function () {
-            el.fadeOut(400, function () {
-                el.remove();
-            });
+            el.fadeOut(400, function () { el.remove(); });
         }, 3500);
     }
 
@@ -473,71 +358,16 @@ $(function () {
     }
 
     function vacio(tb, cols, msg) {
-        if (!tb.children().length) {
-            tb.append('<tr><td colspan="' + cols + '" class="celda-vacia">' + msg + '</td></tr>');
-        }
-    }
-
-    function cargarRolesAccesoAdmin() {
-        if (!$('#a_rol_admin').length) return;
-
-        $.get(url + '?page=admin&option=get_roles_acceso_admin', function (raw) {
-            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            var acceso = $('#a_rol_admin').empty();
-
-            $.each(d.roles_acceso || [], function (i, r) {
-                var rolNombre = r.rol || r.ROL || '';
-                acceso.append($('<option>').val(rolNombre).text(rolNombre));
-            });
-
-            if (!acceso.children().length) {
-                acceso.append('<option value="residente">Residente</option>');
-                acceso.append('<option value="proveedor">Proveedor</option>');
-            }
-        });
+        if (!tb.children().length) tb.append('<tr><td colspan="' + cols + '" class="celda-vacia">' + msg + '</td></tr>');
     }
 
     function cargarAccesosAdmin() {
-        if (!$('#acc-dentro-admin').length) return;
-
+        if (!$('#acc-hist-admin').length) return;
         $.get(url + '?page=admin&option=get_accesos_admin', function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-            var tbD = $('#acc-dentro-admin tbody').empty();
-            $.each(d.dentro || [], function (i, a) {
-                tbD.append(
-                    '<tr>' +
-                        '<td>' + (a.id || '—') + '</td>' +
-                        '<td>' + (a.tipo || '—') + '</td>' +
-                        '<td>' + (a.nombre || '—') + '</td>' +
-                        '<td>' + (a.placa || '—') + '</td>' +
-                        '<td>' + (a.residencia || '—') + '</td>' +
-                        '<td>' + fechaHora(a.fecha_entrada) + '</td>' +
-                        '<td><button class="btn-editar btn-salida-admin" data-id="' + (a.id || '') + '">Salida</button></td>' +
-                    '</tr>'
-                );
-            });
-            vacio(tbD, 7, 'Nadie dentro en este momento');
-
-            var tbH = $('#acc-hoy-admin tbody').empty();
-            $.each(d.hoy || [], function (i, a) {
-                tbH.append(
-                    '<tr>' +
-                        '<td>' + (a.id || '—') + '</td>' +
-                        '<td>' + (a.tipo || '—') + '</td>' +
-                        '<td>' + (a.nombre || '—') + '</td>' +
-                        '<td>' + (a.placa || '—') + '</td>' +
-                        '<td>' + fechaHora(a.fecha_entrada) + '</td>' +
-                        '<td>' + fechaHora(a.fecha_salida) + '</td>' +
-                        '<td>' + (a.estado || '—') + '</td>' +
-                    '</tr>'
-                );
-            });
-            vacio(tbH, 7, 'Sin accesos hoy');
-
-            var tbHist = $('#acc-hist-admin tbody').empty();
+            var tb = $('#acc-hist-admin tbody').empty();
             $.each(d.historial || [], function (i, a) {
-                tbHist.append(
+                tb.append(
                     '<tr>' +
                         '<td>' + (a.id || '—') + '</td>' +
                         '<td>' + (a.tipo || '—') + '</td>' +
@@ -545,147 +375,140 @@ $(function () {
                         '<td>' + (a.placa || '—') + '</td>' +
                         '<td>' + fechaHora(a.fecha_entrada) + '</td>' +
                         '<td>' + fechaHora(a.fecha_salida) + '</td>' +
-                        '<td>' + (a.estado || '—') + '</td>' +
+                        '<td><span class="estado-' + estadoClass(a.estado) + '">' + (a.estado || '—') + '</span></td>' +
+                        '<td><button class="btn-eliminar btn-eliminar-acceso-admin" data-id="' + (a.id || '') + '"><i class="fa-solid fa-trash"></i> Eliminar</button></td>' +
                     '</tr>'
                 );
             });
-            vacio(tbHist, 7, 'Sin historial registrado');
+            vacio(tb, 8, 'Sin historial registrado');
         });
     }
 
     function cargarTurnosAdmin() {
         if (!$('#turnos-admin').length) return;
-
         $.get(url + '?page=admin&option=get_turnos_admin', function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
             var turnoActivo = $('#turno-activo-admin').empty();
             if (d.activo) {
                 turnoActivo.html(
                     '<div class="alerta alerta-ok" style="display:block;">' +
-                        '<strong>Turno activo:</strong> ' + (d.activo.guardia_nombre || '—') +
+                        '<strong>TURNO ACTIVO:</strong> ' + String(d.activo.guardia_nombre || '—').toUpperCase() +
                         ' | Inicio: ' + fechaHora(d.activo.fecha_inicio) +
                     '</div>'
                 );
             } else {
                 turnoActivo.html(
-                    '<div class="alerta alerta-err" style="display:block;">Sin turno activo.</div>'
+                    '<div class="alerta alerta-err" style="display:block;">SIN TURNO ACTIVO.</div>'
                 );
             }
 
-            var tbT = $('#turnos-admin tbody').empty();
-            $.each(d.recientes || [], function (i, t) {
-                tbT.append(
+            var tb = $('#turnos-admin tbody').empty();
+            $.each(d.recientes || d.turnos || [], function (i, t) {
+                tb.append(
                     '<tr>' +
-                        '<td>' + (t.id || t.ID_PERSONA || '—') + '</td>' +
-                        '<td>' + (t.guardia_nombre || '—') + '</td>' +
-                        '<td>' + fechaHora(t.fecha_inicio) + '</td>' +
-                        '<td>' + fechaHora(t.fecha_fin) + '</td>' +
-                        '<td>' + (t.estado || '—') + '</td>' +
+                        '<td>' + String(t.guardia_nombre || '—').toUpperCase() + '</td>' +
+                        '<td>' + (t.fecha_turno || (t.fecha_inicio ? fechaHora(t.fecha_inicio).substr(0, 10) : '—')) + '</td>' +
+                        '<td>' + String(t.horario_turno || '—').toUpperCase() + '</td>' +
+                        '<td><span class="estado-' + estadoClass(t.estado) + '">' + String(t.estado || '—').toUpperCase() + '</span></td>' +
+                        '<td class="tabla-acciones">' +
+                            '<button class="btn-editar btn-editar-turno-admin" data-id_persona="' + (t.id_persona || '') + '" data-id_fechas="' + (t.id_fechas || '') + '" data-id_horario="' + (t.id_horario || '') + '" data-nombre="' + (t.guardia_nombre || '') + '" data-fecha="' + (t.fecha_turno || '') + '" data-horario="' + (t.horario_turno || '') + '" data-estado="' + (t.estado || '') + '"><i class="fa-solid fa-pencil"></i> Editar</button>' +
+                            '<button class="btn-eliminar btn-eliminar-turno-admin" data-id_persona="' + (t.id_persona || '') + '" data-id_fechas="' + (t.id_fechas || '') + '" data-id_horario="' + (t.id_horario || '') + '"><i class="fa-solid fa-trash"></i> Eliminar</button>' +
+                        '</td>' +
                     '</tr>'
                 );
             });
-            vacio(tbT, 5, 'Sin turnos registrados');
+            vacio(tb, 5, 'Sin turnos registrados');
         });
     }
 
-    $(document).on('click', '.nav-sec', function () {
+    function limpiarTurnoForm() {
+        if (!$('#formTurnoAdmin').length) return;
+        $('#formTurnoAdmin')[0].reset();
+        $('#turno_id_persona, #turno_id_fechas, #turno_id_horario').val('');
+        $('#tituloTurnoAdmin').html('<i class="fa-solid fa-pen"></i> Editar turno');
+    }
+
+    $('#formTurnoAdmin').on('submit', function (e) {
+        e.preventDefault();
+        $.post(url, { page: 'admin', option: 'guardar_turno_admin', ...$(this).serializeArray().reduce((acc, {name, value}) => ({...acc, [name]: value}), {}) }, function (raw) {
+            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (d.response == '00') {
+                alerta('Turno guardado.', 'ok');
+                limpiarTurnoForm();
+                cargarTurnosAdmin();
+            } else {
+                alerta(d.message || 'No se pudo guardar.', 'err');
+            }
+        });
+    });
+
+    $('#btnLimpiarTurnoAdmin').on('click', function () {
+        limpiarTurnoForm();
+    });
+
+    $(document).on('click', '.nav-sec', function (e) {
         var sec = $(this).data('sec');
         if (sec === 'accesos-admin') {
-            cargarRolesAccesoAdmin();
             cargarAccesosAdmin();
+        }
+        if (sec === 'turnos-admin') {
             cargarTurnosAdmin();
         }
     });
 
-    $('#sec-accesos-admin').on('click', '.btn-salida-admin', function () {
-        if (!confirm('¿Registrar salida?')) return;
-
-        $.post(url, {
-            page: 'admin',
-            option: 'registrar_salida_admin',
-            id: $(this).data('id')
-        }, function (raw) {
+    $('#sec-accesos-admin').on('click', '.btn-eliminar-acceso-admin', function () {
+        if (!confirm('¿Eliminar este acceso?')) return;
+        $.post(url, { page: 'admin', option: 'eliminar_acceso_admin', id: $(this).data('id') }, function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
             if (d.response == '00') {
-                alerta('Salida registrada.', 'ok');
+                alerta('Acceso eliminado.', 'ok');
                 cargarAccesosAdmin();
             } else {
-                alerta(d.message || 'Error al registrar.', 'err');
+                alerta(d.message || 'No se pudo eliminar.', 'err');
             }
-        }).fail(function (xhr) {
-            alert(xhr.responseText || 'Error al conectar con el servidor.');
         });
     });
 
-    $('#btnLimpiarAccesoAdmin').on('click', function () {
-        if ($('#formAccesoAdmin').length) {
-            $('#formAccesoAdmin')[0].reset();
-        }
+    $('#sec-accesos-admin').on('click', function () {
+        cargarAccesosAdmin();
     });
 
-    $('#formAccesoAdmin').on('submit', function (e) {
-        e.preventDefault();
-
-        if (!$('#a_rol_admin').val() || !$('#a_nombre_admin').val().trim() || !$('#a_residencia_admin').val().trim()) {
-            alerta('Rol, nombre y residencia son requeridos.', 'err');
-            return;
-        }
-
-        if (!$('#a_placa_admin').val().trim()) {
-            alerta('La placa es requerida.', 'err');
-            return;
-        }
-
-        $.post(url, $(this).serialize() + '&page=admin&option=registrar_acceso_admin', function (raw) {
-            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-            if (d.response == '00') {
-                alerta('Acceso registrado.', 'ok');
-                $('#formAccesoAdmin')[0].reset();
-                cargarAccesosAdmin();
-            } else {
-                alerta(d.message || 'Error al registrar.', 'err');
-            }
-        }).fail(function (xhr) {
-            alert(xhr.responseText || 'Error al conectar con el servidor.');
-        });
+    $('#sec-turnos-admin').on('click', '.btn-editar-turno-admin', function () {
+        var btn = $(this);
+        $('#turno_id_persona').val(btn.data('id_persona'));
+        $('#turno_id_fechas').val(btn.data('id_fechas'));
+        $('#turno_id_horario').val(btn.data('id_horario'));
+        $('#turno_guardia_nombre').val(btn.data('nombre'));
+        $('#turno_fecha').val(btn.data('fecha'));
+        $('#turno_horario').val(btn.data('horario'));
+        $('#turno_estado').val(btn.data('estado'));
+        $('#tituloTurnoAdmin').html('<i class="fa-solid fa-pen"></i> Editando turno');
+        $('html, body').animate({scrollTop: $('#sec-turnos-admin').offset().top + 500}, 300);
     });
 
-    $('#formTurnoAdmin').on('submit', function (e) {
-        e.preventDefault();
-
-        $.post(url, $(this).serialize() + '&page=admin&option=iniciar_turno_admin', function (raw) {
-            var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-            if (d.response == '00') {
-                alerta('Turno iniciado.', 'ok');
-                $('#formTurnoAdmin')[0].reset();
-                cargarTurnosAdmin();
-            } else {
-                alerta(d.message || 'Error al iniciar turno.', 'err');
-            }
-        }).fail(function (xhr) {
-            alert(xhr.responseText || 'Error al conectar con el servidor.');
-        });
-    });
-
-    $('#btnFinalizarTurnoAdmin').on('click', function () {
+    $('#sec-turnos-admin').on('click', '.btn-eliminar-turno-admin', function () {
+        if (!confirm('¿Eliminar este turno?')) return;
         $.post(url, {
             page: 'admin',
-            option: 'finalizar_turno_admin'
+            option: 'eliminar_turno_admin',
+            id_persona: $(this).data('id_persona'),
+            id_fechas: $(this).data('id_fechas'),
+            id_horario: $(this).data('id_horario')
         }, function (raw) {
             var d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
             if (d.response == '00') {
-                alerta('Turno finalizado.', 'ok');
+                alerta('Turno eliminado.', 'ok');
                 cargarTurnosAdmin();
             } else {
-                alerta(d.message || 'Error al finalizar turno.', 'err');
+                alerta(d.message || 'No se pudo eliminar.', 'err');
             }
-        }).fail(function (xhr) {
-            alert(xhr.responseText || 'Error al conectar con el servidor.');
         });
     });
+
+    $('#sec-turnos-admin').on('click', function () {
+        cargarTurnosAdmin();
+    });
+
+    cargarAccesosAdmin();
+    cargarTurnosAdmin();
 });

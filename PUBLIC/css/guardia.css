@@ -380,6 +380,11 @@ tbody tr:hover {
     font-weight: 700;
 }
 
+.estado-entregado {
+    color: #1e8a3a;
+    font-weight: 700;
+}
+
 .texto-consulta {
     color: var(--color-gris);
     font-size: 0.9em;

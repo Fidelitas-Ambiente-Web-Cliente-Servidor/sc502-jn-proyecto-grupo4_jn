@@ -28,6 +28,7 @@ $(function () {
         if (e === 'mantenimiento' || e === 'en mantenimiento') return 'mantenimiento';
         if (e === 'vetado') return 'vetado';
         if (e === 'pendiente') return 'pendiente';
+        if (e === 'entregado') return 'entregado';
         return 'inactivo';
     }
 
@@ -105,13 +106,13 @@ $(function () {
 
             var tbH = $('#vis-hoy tbody').empty();
             $.each(d.hoy, function (i, v) {
-                tbH.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td>' + fechaHora(v.fecha_salida) + '</td><td><span class="estado-' + estadoClass(v.estado) + '">' + v.estado + '</span></td></tr>');
+                tbH.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td>' + fechaHora(v.fecha_salida) + '</td><td><span class="estado-' + estadoClass(v.estado) + '">' + (v.estado || '—').toUpperCase() + '</span></td></tr>');
             });
             vacio(tbH, 7, 'Sin registros hoy');
 
             var tbHist = $('#vis-hist tbody').empty();
             $.each(d.historial || [], function (i, v) {
-                tbHist.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td>' + fechaHora(v.fecha_salida) + '</td><td><span class="estado-' + estadoClass(v.estado) + '">' + v.estado + '</span></td></tr>');
+                tbHist.append('<tr><td>' + v.id + '</td><td>' + v.nombre + '</td><td>' + (v.rol || '—') + '</td><td>' + v.residencia + '</td><td>' + fechaHora(v.fecha_entrada) + '</td><td>' + fechaHora(v.fecha_salida) + '</td><td><span class="estado-' + estadoClass(v.estado) + '">' + (v.estado || '—').toUpperCase() + '</span></td></tr>');
             });
             vacio(tbHist, 7, 'Sin historial registrado');
         });
@@ -147,13 +148,13 @@ $(function () {
 
             var tbH = $('#paq-hoy tbody').empty();
             $.each(d.hoy, function (i, p) {
-                tbH.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td>' + fechaHora(p.fecha_entrega) + '</td><td><span class="estado-' + estadoClass(p.estado) + '">' + p.estado + '</span></td></tr>');
+                tbH.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td>' + fechaHora(p.fecha_entrega) + '</td><td><span class="estado-' + estadoClass(p.estado) + '">' + (p.estado || '—').toUpperCase() + '</span></td></tr>');
             });
             vacio(tbH, 6, 'Sin paquetes hoy');
 
             var tbHist = $('#paq-hist tbody').empty();
             $.each(d.historial || [], function (i, p) {
-                tbHist.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td>' + fechaHora(p.fecha_entrega) + '</td><td><span class="estado-' + estadoClass(p.estado) + '">' + p.estado + '</span></td></tr>');
+                tbHist.append('<tr><td>' + p.id + '</td><td>' + p.destinatario + '</td><td>' + p.residencia + '</td><td>' + fechaHora(p.fecha_recepcion) + '</td><td>' + fechaHora(p.fecha_entrega) + '</td><td><span class="estado-' + estadoClass(p.estado) + '">' + (p.estado || '—').toUpperCase() + '</span></td></tr>');
             });
             vacio(tbHist, 6, 'Sin historial registrado');
         });
@@ -189,13 +190,13 @@ $(function () {
 
             var tbH = $('#acc-hoy tbody').empty();
             $.each(d.hoy, function (i, a) {
-                tbH.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td>' + fechaHora(a.fecha_salida) + '</td><td><span class="estado-' + estadoClass(a.estado) + '">' + a.estado + '</span></td></tr>');
+                tbH.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td>' + fechaHora(a.fecha_salida) + '</td><td><span class="estado-' + estadoClass(a.estado) + '">' + (a.estado || '—').toUpperCase() + '</span></td></tr>');
             });
             vacio(tbH, 7, 'Sin accesos hoy');
 
             var tbHist = $('#acc-hist tbody').empty();
             $.each(d.historial || [], function (i, a) {
-                tbHist.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td>' + fechaHora(a.fecha_salida) + '</td><td><span class="estado-' + estadoClass(a.estado) + '">' + a.estado + '</span></td></tr>');
+                tbHist.append('<tr><td>' + a.id + '</td><td>' + (a.tipo || '—') + '</td><td>' + a.nombre + '</td><td>' + (a.placa || '—') + '</td><td>' + fechaHora(a.fecha_entrada) + '</td><td>' + fechaHora(a.fecha_salida) + '</td><td><span class="estado-' + estadoClass(a.estado) + '">' + (a.estado || '—').toUpperCase() + '</span></td></tr>');
             });
             vacio(tbHist, 7, 'Sin historial registrado');
         });
@@ -244,7 +245,7 @@ $(function () {
 
             var tb = $('#tbl-turnos tbody').empty();
             $.each(d.recientes, function (i, t) {
-                tb.append('<tr><td>' + t.id + '</td><td>' + t.guardia_nombre + '</td><td>' + t.fecha_inicio.substr(0, 16) + '</td><td>' + (t.fecha_fin ? t.fecha_fin.substr(0, 16) : '—') + '</td><td><span class="estado-' + estadoClass(t.estado) + '">' + t.estado + '</span></td></tr>');
+                tb.append('<tr><td>' + t.id + '</td><td>' + t.guardia_nombre + '</td><td>' + t.fecha_inicio.substr(0, 16) + '</td><td>' + (t.fecha_fin ? t.fecha_fin.substr(0, 16) : '—') + '</td><td><span class="estado-' + estadoClass(t.estado) + '">' + (t.estado || '—').toUpperCase() + '</span></td></tr>');
             });
             vacio(tb, 5, 'Sin turnos registrados');
         });
